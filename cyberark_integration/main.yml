@@ -12,13 +12,13 @@
         headers:
           Content-Type: "application/json"
       register: cyberark_response
-      no_log: true
+      #no_log: true
 
     - name: Extract username and password
       set_fact:
         cyberark_username: "{{ cyberark_response.json.UserName }}"
         cyberark_password: "{{ cyberark_response.json.Content }}"
-      no_log: true
+      #no_log: true
 
     - name: Display username
       debug:
