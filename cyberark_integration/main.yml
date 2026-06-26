@@ -5,15 +5,20 @@
   tasks:
     - name: Get credential from CyberArk CCP
       uri:
-        url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=testaccount%22"
+        url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=testaccount%22
         method: GET
         validate_certs: yes
+        return_content: yes
+        timeout: 60
       register: cyberark_response
-      #no_log: true
-   
+      no_log: true
+     
     - name: Set password securely
       set_fact:
         ansible_password: "{{ cyberark_response.json.Content }}"
+      no_log: true
+   
+
       #no_log: true
     # - name: Retrieve credentials from CyberArk CCP
     #   uri:
