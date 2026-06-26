@@ -3,32 +3,32 @@
   hosts: localhost
   #gather_facts: false
   tasks:
-    - name: Fetch password from CyberArk CCP
-      ansible.builtin.uri:
-        url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts"
+    # - name: Fetch password from CyberArk CCP
+      # ansible.builtin.uri:
+      #   url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts"
+      #   method: GET
+      #   validate_certs: no
+      #   headers:
+      #     Content-Type: "application/json"
+      #   return_content: yes
+      #   status_code: 200
+      #   body_format: form-urlencoded
+      #   body:
+      #     AppID: "AIMWebService"
+      #     Safe: "WIN-VELUX-ALL-LMA-AD-Admin"
+      #     Object: "testaccount"
+      # register: cyberark_response
+      
+    - name: Get credential from CyberArk CCP
+      uri:
+        url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=testaccount"
         method: GET
-        validate_certs: no
+        timeout: 60
         headers:
           Content-Type: "application/json"
-        return_content: yes
-        status_code: 200
-        body_format: form-urlencoded
-        body:
-          AppID: "AIMWebService"
-          Safe: "WIN-VELUX-ALL-LMA-AD-Admin"
-          Object: "testaccount"
+        validate_certs: false
+        return_content: true
       register: cyberark_response
-    # - name: Get credential from CyberArk CCP
-    #   uri:
-    #     url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=testaccount"
-    #     method: GET
-    #     timeout: 60
-    #     headers:
-    #       Content-Type: "application/json"
-    #     validate_certs: false
-    #     return_content: true
- 
-    #   register: cyberark_response
       #no_log: true
      
     - name: Set password securely
