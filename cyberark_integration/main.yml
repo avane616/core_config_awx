@@ -3,23 +3,35 @@
   hosts: localhost
   gather_facts: false
   tasks:
-    - name: Retrieve credentials from CyberArk CCP
+    - name: Get credential from CyberArk CCP
       uri:
-        url: "{{ ccp_url }}?AppID={{ app_id }}&Safe={{ safe }}&Object={{ object }}"
+        url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=testaccount%22
         method: GET
-        validate_certs: false
-        return_content: true
-        headers:
-          Content-Type: "application/json"
+        validate_certs: yes
       register: cyberark_response
       #no_log: true
-
-    - name: Extract username and password
+   
+    - name: Set password securely
       set_fact:
-        cyberark_username: "{{ cyberark_response.json.UserName }}"
-        cyberark_password: "{{ cyberark_response.json.Content }}"
+        ansible_password: "{{ cyberark_response.json.Content }}"
       #no_log: true
+    # - name: Retrieve credentials from CyberArk CCP
+    #   uri:
+    #     url: "{{ ccp_url }}?AppID={{ app_id }}&Safe={{ safe }}&Object={{ object }}"
+    #     method: GET
+    #     validate_certs: false
+    #     return_content: true
+    #     headers:
+    #       Content-Type: "application/json"
+    #   register: cyberark_response
+    #   #no_log: true
 
-    - name: Display username
-      debug:
-        msg: "Retrieved username: {{ cyberark_username }}"
+    # - name: Extract username and password
+    #   set_fact:
+    #     cyberark_username: "{{ cyberark_response.json.UserName }}"
+    #     cyberark_password: "{{ cyberark_response.json.Content }}"
+    #   #no_log: true
+
+    # - name: Display username
+    #   debug:
+    #     msg: "Retrieved username: {{ cyberark_username }}"
