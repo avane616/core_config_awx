@@ -10,7 +10,7 @@
         timeout: 60
         headers:
           Content-Type: "application/json"
-        validate_certs: true
+        validate_certs: false
         return_content: true
  
       register: cyberark_response
