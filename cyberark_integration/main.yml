@@ -1,7 +1,7 @@
 ---
 - name: Fetch credentials from CyberArk CCP
   hosts: localhost
-  gather_facts: false
+  #gather_facts: false
   tasks:
     - name: Get credential from CyberArk CCP
       uri:
