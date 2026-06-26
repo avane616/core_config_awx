@@ -1,0 +1,24 @@
+- name: Fetch Open RITMs and Trigger Workflow for Each
+  hosts: localhost
+  gather_facts: no
+  vars: 
+    servicenow_instance: "https://hcltechdemosls4.service-now.com"
+  tasks:
+
+    - name: Get open RITMs for the catalog item
+      uri:
+       
+        url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=number=RITM0013849" #active=true^cat_item.name={{ catalog_item_name }}" #^stateIN1,2&sysparm_fields=sys_id,number,variables"
+        method: GET
+        user: "{{ lookup('env', 'user') }}"
+        password: "{{ lookup('env', 'password') }}"
+        force_basic_auth: yes
+        return_content: yes
+        headers:
+          Accept: "application/json"
+      register: ritm_response
+
+    - name: Extract RITM sys_ids and numbers
+      set_fact:
+        ritm_sys_ids: "{{ ritm_response.json.result | map(attribute='sys_id') | list }}"
+        ritm_numbers: "{{ ritm_response.json.result | map(attribute='number') | list }}"
