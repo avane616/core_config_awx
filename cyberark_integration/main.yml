@@ -7,8 +7,9 @@
       uri:
         url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=testaccount"
         method: GET
-        validate_certs: yes
-        return_content: yes
+        timeout: 60
+        validate_certs: false
+        return_content: true
         timeout: 60
       register: cyberark_response
       #no_log: true
