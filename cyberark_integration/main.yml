@@ -3,6 +3,15 @@
   hosts: localhost
   #gather_facts: false
   tasks:
+    - name: Check runtime user
+      shell: |
+        whoami
+        id
+      register: user_info
+     
+    - debug:
+        var: user_info.stdout
+ 
     # - name: Fetch password from CyberArk CCP
       # ansible.builtin.uri:
       #   url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts"
