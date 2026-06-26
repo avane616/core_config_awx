@@ -3,18 +3,18 @@
   hosts: localhost
   #gather_facts: false
   tasks:
-    - name: Get execution context
-      shell: |
-        echo "Hostname: $(hostname)"
-        echo "IP: $(hostname -i)"
-      register: exec_info
+    # - name: Get execution context
+    #   shell: |
+    #     echo "Hostname: $(hostname)"
+    #     echo "IP: $(hostname -i)"
+    #   register: exec_info
    
-    - debug:
-        var: exec_info.stdout
-    # - name: Test connectivity to CCP
-    #   shell: curl -vk https://DNKGEITGCYWQ004.services.internal
-    #   register: test_conn
-    #   ignore_errors: yes
-     
     # - debug:
-    #     var: test_conn
+    #     var: exec_info.stdout
+    - name: Test connectivity to CCP
+      shell: curl -vk https://DNKGEITGCYWQ004.services.internal
+      register: test_conn
+      ignore_errors: yes
+     
+    - debug:
+        var: test_conn
