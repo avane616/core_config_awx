@@ -1,0 +1,12 @@
+---
+- name: Fetch credentials from CyberArk CCP
+  hosts: localhost
+  #gather_facts: false
+  tasks:
+    - name: Test connectivity to CCP
+      shell: curl -vk https://DNKGEITGCYWQ004.services.internal
+      register: test_conn
+      ignore_errors: yes
+     
+    - debug:
+        var: test_conn
