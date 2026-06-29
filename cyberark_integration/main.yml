@@ -118,7 +118,7 @@
 
     - name: Display system information
       ansible.builtin.debug:
-      var: system_info.stdout
+        var: system_info.stdout
 
 #     # - name: Retrieve credentials from CyberArk CCP
 #     #   uri:
