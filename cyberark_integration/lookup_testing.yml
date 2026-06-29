@@ -17,5 +17,5 @@
 
   tasks:
     - debug:
-        msg: "Password retrieved successfully"
-      no_log: true
+        msg: "{{ cyberark_password }}"
+      #no_log: true
