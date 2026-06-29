@@ -3,19 +3,25 @@
   hosts: localhost
   gather_facts: false
 
-  vars:
-    cyberark_password: >-
-      {{
-        lookup(
-          'community.general.cyberarkpassword',
-          'app_id=AIM-Test-Application',
-          api_base_url='https://DNKGEITGCYWQ004.services.internal',
-          query='Safe=WIN-VELUX-ALL-LMA-AD-Admin;Object=testaccount',
-          validate_certs=False
-        )
-      }}
-
   tasks:
+    
+    - name: Install cyberark.pas collection
+      shell: |
+        ansible-galaxy collection install community.general
+
+    - name: Fetch password from CyberArk
+      ansible.builtin.set_fact:
+        cyberark_password: >-
+          {{
+            lookup(
+              'community.general.cyberarkpassword',
+              'app_id=AIM-Test-Application',
+              api_base_url='https://DNKGEITGCYWQ004.services.internal',
+              query='Safe=WIN-VELUX-ALL-LMA-AD-Admin;Object=testaccount',
+              validate_certs=False
+            )
+          }}
+        
     - debug:
         msg: "{{ cyberark_password }}"
       #no_log: true
