@@ -93,8 +93,8 @@
     - debug:
         var: ansible_password
 
-     - name: Dynamically inject target host with CyberArk credentials
-       ansible.builtin.add_host:
+    - name: Dynamically inject target host with CyberArk credentials
+      ansible.builtin.add_host:
         name: "{{ target_linux_ip }}"
         groups: dynamic_cyberark_targets
         ansible_user: "{{ target_linux_user }}"
@@ -102,10 +102,10 @@
         ansible_ssh_auth_method: password
         no_log: true
 
-     - name: Phase 2 - Execute Tasks on Target Linux Machine
-       hosts: dynamic_cyberark_targets
-       gather_facts: true
-       tasks:
+    - name: Phase 2 - Execute Tasks on Target Linux Machine
+      hosts: dynamic_cyberark_targets
+      gather_facts: true
+      tasks:
         - name: Verify successful connection
           ansible.builtin.debug:
              msg: "Successfully logged into {{ inventory_hostname }} as {{ ansible_user }}!"
