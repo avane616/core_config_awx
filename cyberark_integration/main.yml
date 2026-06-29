@@ -9,6 +9,7 @@
   
     - name: Install cyberark.pas collection
       shell: |
+        ansible-galaxy collection list community.general
         ansible-galaxy collection install cyberark.pas
       #changed_when: false
 
