@@ -4,18 +4,30 @@
   vars: 
     servicenow_instance: "https://hcltechdemosls4.service-now.com"
   tasks:
-    - name: Get OAuth token from ServiceNow
+    - name: Get OAuth token
       uri:
         url: "{{ servicenow_instance }}/oauth_token.do"
         method: POST
+        user: "{{ lookup('env','SN_CLIENT_ID') }}"
+        password: "{{ lookup('env','SN_CLIENT_SECRET') }}"
+        force_basic_auth: yes
         body_format: form-urlencoded
         body:
           grant_type: client_credentials
-          client_id: "{{ lookup('env','SN_CLIENT_ID') }}"
-          client_secret: "{{ lookup('env','SN_CLIENT_SECRET') }}"
         return_content: yes
-        status_code: 200
       register: oauth_token_response
+    # - name: Get OAuth token from ServiceNow
+    #   uri:
+    #     url: "{{ servicenow_instance }}/oauth_token.do"
+    #     method: POST
+    #     body_format: form-urlencoded
+    #     body:
+    #       grant_type: client_credentials
+    #       client_id: "{{ lookup('env','SN_CLIENT_ID') }}"
+    #       client_secret: "{{ lookup('env','SN_CLIENT_SECRET') }}"
+    #     return_content: yes
+    #     status_code: 200
+    #   register: oauth_token_response
     
     - name: Store access token
       set_fact:
