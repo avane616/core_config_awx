@@ -1,0 +1,25 @@
+- name: Fetch Open RITMs and Trigger Workflow for Each
+  hosts: localhost
+  gather_facts: no
+  vars: 
+    servicenow_instance: "https://hcltechdemosls4.service-now.com"
+  tasks:
+    - name: Generate Base64 Authorization Header
+      set_fact:
+        auth_header: "{{ (lookup('env','SN_CLIENT_ID') ~ ':' ~ lookup('env','SN_CLIENT_SECRET')) | b64encode }}"
+    
+    - name: Get ServiceNow OAuth Token
+      uri:
+        url: "{{ servicenow_instance }}/oauth_token.do"
+        method: POST
+        headers:
+          Authorization: "Basic {{ auth_header }}"
+          Content-Type: "application/x-www-form-urlencoded"
+        body_format: form-urlencoded
+        body:
+          grant_type: client_credentials
+        return_content: true
+      register: snow_token
+    
+    - debug:
+        var: snow_token.json
