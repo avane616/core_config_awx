@@ -13,8 +13,8 @@
           grant_type: client_credentials
           client_id: "{{ lookup('env','SN_CLIENT_ID') }}"
           client_secret: "{{ lookup('env','SN_CLIENT_SECRET') }}"
-        return_content: yes
-        status_code: 200
+        return_content: true
+        #status_code: 200
       register: oauth_token_response
     
     - name: Store access token
