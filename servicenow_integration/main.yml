@@ -25,7 +25,7 @@
         
     - name: Update RITM state and work notes
       uri:
-        url: "{{ servicenow_instance }}/api/now/table/sc_req_item/{{ ritm_sys_ids }}"
+        url: "{{ servicenow_instance }}/api/now/table/sc_req_item/{{ ritm_sys_ids[0] }}"
         method: PUT
         user: "{{ lookup('env', 'user') }}"
         password: "{{ lookup('env', 'password') }}"
