@@ -77,8 +77,9 @@
         url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=testaccount"
         method: GET
         timeout: 60
+        use_proxy: false
         headers:
-          Content-Type: "application/json"
+          Connection: close
         validate_certs: false
         return_content: true
       register: cyberark_response
