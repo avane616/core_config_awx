@@ -8,6 +8,7 @@
       uri:
         url: "{{ servicenow_instance }}/oauth_token.do"
         method: POST
+        use_proxy: false
         body_format: form-urlencoded
         body:
           grant_type: client_credentials
