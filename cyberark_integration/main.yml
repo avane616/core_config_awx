@@ -87,20 +87,22 @@
         var: cyberark_response
     - name: Set password securely
       set_fact:
-        ansible_password: "{{ cyberark_response.json.Content }}"
+        target_linux_user: "{{ cyberark_response.json.UserName }}"
+        
       #no_log: true
    
     - debug:
-        var: ansible_password
+        var: target_linux_user
 
     - name: Dynamically inject target host with CyberArk credentials
       ansible.builtin.add_host:
-        name: "{{ target_linux_ip }}"
+        name: "{{ item }}"
         groups: dynamic_cyberark_targets
         ansible_user: "{{ target_linux_user }}"
         ansible_password: "{{ cyberark_response.json.Content }}"
         ansible_ssh_auth_method: password
-        no_log: true
+      no_log: true
+      loop: "{{ target_linux_ips }}"
 
     - name: Phase 2 - Execute Tasks on Target Linux Machine
       hosts: dynamic_cyberark_targets
