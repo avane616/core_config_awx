@@ -8,9 +8,9 @@
   tasks:
   
     - name: Install cyberark.pas collection
-      ansible.builtin.command:
-        cmd: ansible-galaxy collection install cyberark.pas
-      changed_when: false
+      shell: |
+        ansible-galaxy collection install cyberark.pas
+      #changed_when: false
 
     - name: Retrieve credentials using Central Credential Provider
       cyberark.pas.cyberark_credential:
