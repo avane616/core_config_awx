@@ -82,7 +82,7 @@
         validate_certs: false
         return_content: true
       register: cyberark_response
-      become_user: admin
+      #become_user: admin
 #       #no_log: true
      
     - name: Set password securely
