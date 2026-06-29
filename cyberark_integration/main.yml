@@ -1,70 +1,102 @@
----
-- name: Fetch credentials from CyberArk CCP
+- name: playbook using CyberArk PAS
   hosts: localhost
-  #gather_facts: false
+  gather_facts: false
+  vars:
+    cyberark_url: "https://DNKGEITGCYWQ004.services.internal"
+    vault_safe: "WIN-VELUX-ALL-LMA-AD-Admin"
+    username: "testaccount"
   tasks:
-    - name: Check runtime user
-      shell: |
-        whoami
-        id
-      register: user_info
-     
-    - debug:
-        var: user_info.stdout
- 
-    # - name: Fetch password from CyberArk CCP
-      # ansible.builtin.uri:
-      #   url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts"
-      #   method: GET
-      #   validate_certs: no
-      #   headers:
-      #     Content-Type: "application/json"
-      #   return_content: yes
-      #   status_code: 200
-      #   body_format: form-urlencoded
-      #   body:
-      #     AppID: "AIMWebService"
-      #     Safe: "WIN-VELUX-ALL-LMA-AD-Admin"
-      #     Object: "testaccount"
-      # register: cyberark_response
-      
-    - name: Get credential from CyberArk CCP
-      uri:
-        url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=testaccount"
-        method: GET
-        timeout: 60
-        headers:
-          Content-Type: "application/json"
+    - name: Retrieve credentials using Central Credential Provider
+      cyberark.pas.cyberark_credential:
+        api_base_url: "{{ cyberark_url }}"
+        app_id: "AIM-Test-Application"
         validate_certs: false
-        return_content: true
-      register: cyberark_response
-      become_user: admin
-      #no_log: true
+        reason: "requesting credential for Ansible deployment"
+        connection_timeout: 60
+        query: "Safe={{ vault_safe}};UserName={{ username }}"
+        query_format: "Exact"
+        fail_request_on_password_change: True
+      register: ca_cred
+      delegate_to: localhost
+      no_log: true
+
+    - name: Set ansible_password to remote node
+      ansible.builtin.set_fact:
+        ansible_user: "{{ ca_cred.result.UserName }}"
+        ansible_password: "{{ ca_cred.result.Content }}"
+      no_log: true
+
+    - name: Execute some command
+      ansible.builtin.shell: "hostname"
+      register: shell_output
+
+# ---
+# - name: Fetch credentials from CyberArk CCP
+#   hosts: localhost
+#   #gather_facts: false
+#   tasks:
+#     - name: Check runtime user
+#       shell: |
+#         whoami
+#         id
+#       register: user_info
      
-    - name: Set password securely
-      set_fact:
-        ansible_password: "{{ cyberark_response.json.Content }}"
-      #no_log: true
+#     - debug:
+#         var: user_info.stdout
+ 
+#     # - name: Fetch password from CyberArk CCP
+#       # ansible.builtin.uri:
+#       #   url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts"
+#       #   method: GET
+#       #   validate_certs: no
+#       #   headers:
+#       #     Content-Type: "application/json"
+#       #   return_content: yes
+#       #   status_code: 200
+#       #   body_format: form-urlencoded
+#       #   body:
+#       #     AppID: "AIMWebService"
+#       #     Safe: "WIN-VELUX-ALL-LMA-AD-Admin"
+#       #     Object: "testaccount"
+#       # register: cyberark_response
+      
+#     - name: Get credential from CyberArk CCP
+#       uri:
+#         url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=testaccount"
+#         method: GET
+#         timeout: 60
+#         headers:
+#           Content-Type: "application/json"
+#         validate_certs: false
+#         return_content: true
+#       register: cyberark_response
+#       become_user: admin
+#       #no_log: true
+     
+#     - name: Set password securely
+#       set_fact:
+#         ansible_password: "{{ cyberark_response.json.Content }}"
+#       #no_log: true
    
 
-      #no_log: true
-    # - name: Retrieve credentials from CyberArk CCP
-    #   uri:
-    #     url: "{{ ccp_url }}?AppID={{ app_id }}&Safe={{ safe }}&Object={{ object }}"
-    #     method: GET
-    #     validate_certs: false
-    #     return_content: true
-    #     headers:
-    #       Content-Type: "application/json"
-    #   register: cyberark_response
-    #   #no_log: true
+#       #no_log: true
+#     # - name: Retrieve credentials from CyberArk CCP
+#     #   uri:
+#     #     url: "{{ ccp_url }}?AppID={{ app_id }}&Safe={{ safe }}&Object={{ object }}"
+#     #     method: GET
+#     #     validate_certs: false
+#     #     return_content: true
+#     #     headers:
+#     #       Content-Type: "application/json"
+#     #   register: cyberark_response
+#     #   #no_log: true
 
-    # - name: Extract username and password
-    #   set_fact:
-    #     cyberark_username: "{{ cyberark_response.json.UserName }}"
-    #     cyberark_password: "{{ cyberark_response.json.Content }}"
-    #   #no_log: true
+#     # - name: Extract username and password
+#     #   set_fact:
+#     #     cyberark_username: "{{ cyberark_response.json.UserName }}"
+#     #     cyberark_password: "{{ cyberark_response.json.Content }}"
+#     #   #no_log: true
 
-    # - name: Display username
-    #   debug:
-    #     msg: "Retrieved username: {{ cyberark_username }}"
+#     # - name: Display username
+#     #   debug:
+#     #     msg: "Retrieved username: {{ cyberark_username }}"
