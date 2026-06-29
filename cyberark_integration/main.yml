@@ -74,7 +74,7 @@
       
     - name: Get credential from CyberArk CCP
       uri:
-        url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=awxtest"
+        url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=ansibletest"
         method: GET
         timeout: 120
         validate_certs: false
