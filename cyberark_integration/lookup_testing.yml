@@ -1,0 +1,21 @@
+---
+- name: Retrieve password from CyberArk CCP
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cyberark_password: >-
+      {{
+        lookup(
+          'community.general.cyberarkpassword',
+          'app_id=AIM-Test-Application',
+          api_base_url='https://DNKGEITGCYWQ004.services.internal',
+          query='Safe=WIN-VELUX-ALL-LMA-AD-Admin;Object=testaccount',
+          validate_certs=False
+        )
+      }}
+
+  tasks:
+    - debug:
+        msg: "Password retrieved successfully"
+      no_log: true
