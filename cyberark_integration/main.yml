@@ -104,21 +104,21 @@
       no_log: true
       loop: "{{ target_linux_ips }}"
 
-    - name: Phase 2 - Execute Tasks on Target Linux Machine
-      hosts: dynamic_cyberark_targets
-      gather_facts: true
-      tasks:
-        - name: Verify successful connection
-          ansible.builtin.debug:
-             msg: "Successfully logged into {{ inventory_hostname }} as {{ ansible_user }}!"
+- name: Phase 2 - Execute Tasks on Target Linux Machine
+  hosts: dynamic_cyberark_targets
+  gather_facts: true
+  tasks:
+    - name: Verify successful connection
+      ansible.builtin.debug:
+         msg: "Successfully logged into {{ inventory_hostname }} as {{ ansible_user }}!"
 
-        - name: Run a sample remote command
-          ansible.builtin.command: uname -a
-          register: system_info
+    - name: Run a sample remote command
+      ansible.builtin.command: uname -a
+      register: system_info
 
-        - name: Display system information
-          ansible.builtin.debug:
-          var: system_info.stdout
+    - name: Display system information
+      ansible.builtin.debug:
+      var: system_info.stdout
 
 #     # - name: Retrieve credentials from CyberArk CCP
 #     #   uri:
