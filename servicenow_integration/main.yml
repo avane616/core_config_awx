@@ -11,28 +11,12 @@
 
   tasks:
 
-    - name: Generate ServiceNow Access Token
-      uri:
-        url: "https://awx.dnkd1vsek8np100.velux.org/api/o/authorize/?response_type=code&client_id={{ client_id }}&redirect_uri=https://hcltechdemosls4.service-now.com/oauth_redirect.do"
-        method: GET
-        validate_certs: false
-        #body_format: form-urlencoded
-        headers:
-          Accept: "application/json"
-        return_content: true
-        status_code: 200
-      register: token_response
-
-    - name: Save Access Token
-      set_fact:
-        access_token: "{{ token_response.json.access_token }}"
-
     - name: Create Incident in ServiceNow
       uri:
         url: "https://{{ snow_instance }}/api/now/table/incident"
         method: POST
         headers:
-          Authorization: "Bearer {{ access_token }}"
+          Authorization: "Bearer XFT8Ye9Ntb51guUVCbABP7bIBr4jeM"
           Content-Type: "application/json"
           Accept: "application/json"
         body_format: json
