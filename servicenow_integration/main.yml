@@ -20,8 +20,8 @@
           grant_type: password
           client_id: "{{ client_id }}"
           client_secret: "{{ client_secret }}"
-          username: "{{ lookup('env', 'user') }}"
-          password: "{{ lookup('env', 'password') }}"
+         # username: "{{ lookup('env', 'user') }}"
+          #password: "{{ lookup('env', 'password') }}"
         return_content: yes
       register: token_response
 
