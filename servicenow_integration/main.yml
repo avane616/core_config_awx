@@ -13,13 +13,9 @@
 
     - name: Generate ServiceNow Access Token
       uri:
-        url: "https://{{ snow_instance }}/oauth_token.do"
-        method: POST
+        url: "https://awx.dnkd1vsek8np100.velux.org/api/o/authorize/?response_type=code&client_id={{ cliend_id }}&redirect_uri=https://hcltechdemosls4.service-now.com/oauth_redirect.do"
+        method: GET
         body_format: form-urlencoded
-        body:
-          grant_type: client_credentials
-          client_id: "{{ client_id }}"
-          client_secret: "{{ client_secret }}"
         headers:
           Accept: "application/json"
         return_content: true
