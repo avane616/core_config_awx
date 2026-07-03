@@ -15,7 +15,8 @@
       uri:
         url: "https://awx.dnkd1vsek8np100.velux.org/api/o/authorize/?response_type=code&client_id={{ client_id }}&redirect_uri=https://hcltechdemosls4.service-now.com/oauth_redirect.do"
         method: GET
-        body_format: form-urlencoded
+        validate_certs: false
+        #body_format: form-urlencoded
         headers:
           Accept: "application/json"
         return_content: true
