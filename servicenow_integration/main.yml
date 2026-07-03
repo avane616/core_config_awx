@@ -13,7 +13,7 @@
 
     - name: Generate ServiceNow Token
       uri:
-        url: "https://<instance>.service-now.com/oauth_token.do"
+        url: "https://{{ snow_instance }}/oauth_token.do"
         method: POST
         body_format: form-urlencoded
         body:
