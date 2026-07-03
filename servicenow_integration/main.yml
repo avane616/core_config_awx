@@ -11,6 +11,20 @@
 
   tasks:
 
+  - name: Generate ServiceNow Token
+    uri:
+      url: "https://<instance>.service-now.com/oauth_token.do"
+      method: POST
+      body_format: form-urlencoded
+      body:
+        grant_type: password
+        client_id: "{{ client_id }}"
+        client_secret: "{{ client_secret }}"
+        username: "{{ lookup('env', 'user') }}"
+        password: "{{ lookup('env', 'password') }}"
+      return_content: yes
+    register: token_response
+
     - name: Create Incident in ServiceNow
       uri:
         url: "https://{{ snow_instance }}/api/now/table/incident"
