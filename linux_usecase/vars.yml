@@ -4,3 +4,4 @@ sparse_checkout:
   - tools_integration
   - linux_filesystem_extension
 Release_version: "test"
+filesystem_name: "/app"
