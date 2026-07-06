@@ -1,33 +1,16 @@
 ---
-- name: Test connection to Nutanix Prism Central
+- name: Test connectivity from AWX to Prism Central
   hosts: localhost
-  gather_facts: false
-
-  vars:
-    prism_host: "prism-central.company.com"
-    prism_username: "admin"
-    prism_password: "password"
-
+  gather_facts: no
+ 
   tasks:
-
-    - name: Query Prism Central cluster information
-      uri:
-        url: "https://{{ prism_host }}:9440/api/nutanix/v3/clusters/list"
-        method: POST
-        user: "{{ prism_username }}"
-        password: "{{ prism_password }}"
-        force_basic_auth: true
-        validate_certs: false
-        headers:
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          kind: "cluster"
-          offset: 0
-          length: 10
-        status_code: 200
-      register: prism_response
-
-    - name: Display response
+    - name: Check TCP connectivity to Prism Central port 9440
+      wait_for:
+        host: dnkhovpcp001
+        port: 9440
+        timeout: 10
+      register: connectivity_test
+ 
+    - name: Display connectivity result
       debug:
-        var: prism_response.json
+        msg: "Successfully connected to dnkhovpcp001:9440"
