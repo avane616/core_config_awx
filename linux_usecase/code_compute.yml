@@ -1,0 +1,18 @@
+---
+  - include_vars: vars.yml
+    no_log: true
+
+  - name: prepare sparse git repository
+    shell: |
+      git init
+      git config core.sparsecheckout true
+      git remote add origin {{ repo_url }}
+    args:
+      chdir: "{{ playbook_dir }}"
+      creates: "{{ playbook_dir }}/.git" 
+
+  - name: clone code
+    shell: "git pull origin {{ Release_version }} ; git checkout FETCH_HEAD"
+    args:
+      chdir: "{{ playbook_dir }}"
+      creates: "{{ playbook_dir }}/{{ sparse_checkout | first }}"
