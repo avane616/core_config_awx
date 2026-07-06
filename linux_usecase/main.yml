@@ -23,7 +23,12 @@
         groups: dynamic_cyberark_targets
         ansible_user: "{{ target_linux_user }}"
         ansible_password: "{{ target_linux_password }}"
-        ansible_ssh_auth_method: password
+        ansible_ssh_auth_method: password       
+        # Privilege Escalation
+        ansible_become: true
+        ansible_become_method: sudo
+        ansible_become_user: root
+        ansible_become_password: "{{ target_linux_password }}"
       #no_log: true
       loop: "{{ target_linux_ips }}"
 
