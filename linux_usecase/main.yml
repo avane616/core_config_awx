@@ -32,10 +32,11 @@
   gather_facts: true
 
   tasks:
-
     - name: Run code compute tasks
-      include_tasks: code_compute.yml
-      delegate_to: localhost
+      include_tasks:
+        file: code_compute.yml
+        apply:
+          delegate_to: localhost
       
     # Execute all validation checks before expansion
     - name: Run precheck
