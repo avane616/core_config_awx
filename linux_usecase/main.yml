@@ -2,14 +2,18 @@
 - name: Prepare dynamic targets
   hosts: localhost
   gather_facts: yes
+
   tasks:
-    - include_vars: vars.yml
+    - name: Include variables
+      include_vars:
+        file: vars.yml
 
-    - include: code_compute.yml
-      delegate_to: localhost
+    - name: Run code compute tasks
+      include_tasks: code_compute.yml
 
-# Fetch Credentials from CyberArk
-    - include_role:
+    # Fetch Credentials from CyberArk
+    - name: Fetch CyberArk credentials
+      include_role:
         name: roles/tools_integration
         tasks_from: cyberark_integration.yml
 
@@ -23,24 +27,25 @@
       no_log: true
       loop: "{{ target_linux_ips }}"
 
-
 - name: Phase 2 - Execute Tasks on Target Linux Machine
   hosts: dynamic_cyberark_targets
   gather_facts: true
+
   tasks:
-  
-# Execute all validation checks before expansion
-    - include_role:
+    # Execute all validation checks before expansion
+    - name: Run precheck
+      include_role:
         name: roles/linux_filesystem_extension
-        tasks_from: precheck.yml   
+        tasks_from: precheck.yml
 
-# Perform filesystem expansion activities
-    # - include_role:
+    # Perform filesystem expansion activities
+    # - name: Expand filesystem
+    #   include_role:
     #     name: roles/linux_filesystem_extension
-    #     tasks_from: expand.yml 
+    #     tasks_from: expand.yml
 
-
-# Validate filesystem after expansion
-    - include_role:
+    # Validate filesystem after expansion
+    - name: Run validation
+      include_role:
         name: roles/linux_filesystem_extension
         tasks_from: validate.yml
