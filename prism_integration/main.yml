@@ -1,0 +1,33 @@
+---
+- name: Test connection to Nutanix Prism Central
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    prism_host: "prism-central.company.com"
+    prism_username: "admin"
+    prism_password: "password"
+
+  tasks:
+
+    - name: Query Prism Central cluster information
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/clusters/list"
+        method: POST
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          kind: "cluster"
+          offset: 0
+          length: 10
+        status_code: 200
+      register: prism_response
+
+    - name: Display response
+      debug:
+        var: prism_response.json
