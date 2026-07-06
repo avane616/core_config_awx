@@ -3,12 +3,9 @@
   hosts: localhost
   gather_facts: yes
   tasks:
-    - name: Include required variables
-      include_vars:
-        file: vars.yml
-      delegate_to: localhost
+    - include_vars: vars.yml
 
-    - include_tasks: code_compute.yml
+    - include: code_compute.yml
       delegate_to: localhost
 
 # Fetch Credentials from CyberArk
