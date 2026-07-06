@@ -8,7 +8,7 @@
         file: vars.yml
       delegate_to: localhost
 
-    - include: code_compute.yml
+    - include_tasks: code_compute.yml
       delegate_to: localhost
 
 # Fetch Credentials from CyberArk
