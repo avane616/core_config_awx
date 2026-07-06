@@ -32,17 +32,17 @@
   gather_facts: true
 
   tasks:
-    - name: Run code compute tasks
-      include_tasks:
-        file: code_compute.yml
-        apply:
-          delegate_to: localhost
+    # - name: Run code compute tasks
+    #   include_tasks:
+    #     file: code_compute.yml
+    #     apply:
+    #       delegate_to: localhost
       
     # Execute all validation checks before expansion
     - name: Run precheck
       include_role:
         name: linux_filesystem_extension
-        tasks_from: precheck.yml
+        tasks_from: pre_checks.yml
 
     # Perform filesystem expansion activities
     # - name: Expand filesystem
