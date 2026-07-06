@@ -14,7 +14,7 @@
     # Fetch Credentials from CyberArk
     - name: Fetch CyberArk credentials
       include_role:
-        name: roles/tools_integration
+        name: tools_integration
         tasks_from: cyberark_integration.yml
 
     - name: Dynamically inject target host with CyberArk credentials
@@ -24,7 +24,7 @@
         ansible_user: "{{ target_linux_user }}"
         ansible_password: "{{ target_linux_password }}"
         ansible_ssh_auth_method: password
-      no_log: true
+      #no_log: true
       loop: "{{ target_linux_ips }}"
 
 - name: Phase 2 - Execute Tasks on Target Linux Machine
