@@ -1,5 +1,5 @@
 ## Added variable files
-repo_url: "https://VELUX:{{az_pat}}@github.com/VELUX/inframgmt-shared-resource-ansible-
+repo_url: "https://VELUX:{{az_pat}}@github.com/VELUX/inframgmt-shared-resource-ansible-roles.git"
 sparse_checkout:
   - roles
 Release_version: "test"
