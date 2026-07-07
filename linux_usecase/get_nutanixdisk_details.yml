@@ -43,7 +43,7 @@
   tasks:
 
     - name: Get device mapped to filesystem
-      command: "df {{ filesystem_mount }} --output=source | tail -1"
+      shell: df {{ filesystem_mount }} --output=source | tail -1
       register: fs_device
       changed_when: false
 
