@@ -51,7 +51,7 @@
           length: 500
           offset: 0
       register: vm_list
-      no_log: true
+      #no_log: true
  
     - name: Initialize VM disk match list
       set_fact:
