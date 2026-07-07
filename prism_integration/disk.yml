@@ -17,26 +17,6 @@
  
   tasks:
 
-  ---
-- name: Find Nutanix container ID from Linux disk UUID
-  hosts: localhost
-  connection: local
-  gather_facts: false
- 
-  vars:
-    prism_central_url: "https://dnkhovpcp001:9440"
- 
-    # Linux/Nutanix disk UUID
-    disk_uuid: "88d2a1bb-14f1-43ba-88f4-85e7c43bfe38"
- 
-    # Pass these securely from AWX credential/env vars
-    prism_username: "{{ lookup('env', 'PRISM_USERNAME') }}"
-    prism_password: "{{ lookup('env', 'PRISM_PASSWORD') }}"
- 
-    validate_ssl: false
- 
-  tasks:
- 
     - name: Normalize disk UUID formats
       set_fact:
         disk_uuid_dash: "{{ disk_uuid | lower | replace('_', '-') }}"
