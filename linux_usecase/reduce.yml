@@ -1,0 +1,75 @@
+---
+- name: Prepare dynamic targets
+  hosts: localhost
+  gather_facts: yes
+
+  tasks:
+    - name: Include variables
+      include_vars:
+        file: vars.yml
+
+    - name: Run code compute tasks
+      include_tasks: code_compute.yml
+
+    # Fetch Credentials from CyberArk
+    - name: Fetch CyberArk credentials
+      include_role:
+        name: tools_integration
+        tasks_from: cyberark_integration.yml
+
+    - name: Dynamically inject target host with CyberArk credentials
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: dynamic_cyberark_targets
+        ansible_user: "{{ target_linux_user }}"
+        ansible_password: "{{ target_linux_password }}"
+        ansible_ssh_auth_method: password       
+        # Privilege Escalation
+        ansible_become: true
+        ansible_become_method: sudo
+        ansible_become_user: root
+        ansible_become_password: "{{ target_linux_password }}"
+      #no_log: true
+      loop: "{{ target_linux_ips }}"
+
+- name: Phase 2 - Execute Tasks on Target Linux Machine
+  hosts: dynamic_cyberark_targets
+  gather_facts: true
+  become: true
+  vars:
+    vg_name: vg00
+    lv_name: lvol5
+    lv_path: "/dev/vg00/lvol5"
+    extend_size: "-1G"
+ 
+  tasks:
+    - name: Verify LV exists
+      stat:
+        path: "{{ lv_path }}"
+      register: lv_check
+ 
+    - name: Fail if LV does not exist
+      fail:
+        msg: "Logical Volume {{ lv_path }} does not exist"
+      when: not lv_check.stat.exists
+
+    - name: Unmount /tmp
+      mount:
+        path: /tmp
+        state: unmounted
+ 
+    - name: Check filesystem
+      command: e2fsck -f -y /dev/vg00/lvol5
+ 
+    - name: Shrink filesystem to 3G
+      command: resize2fs /dev/vg00/lvol5 1G
+ 
+    - name: Reduce LV
+      command: lvreduce -L 1G -y /dev/vg00/lvol5
+ 
+    - name: Mount /tmp
+      mount:
+        path: /tmp
+        src: /dev/vg00/lvol5
+        fstype: ext4
+        state: mounted
