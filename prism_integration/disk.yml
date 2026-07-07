@@ -66,6 +66,10 @@
         )
         or
         (
+          item.disk_uuid | default('') | lower == disk_uuid
+        )
+        or
+        (
           item.disk_uuid | default('') | lower == disk_uuid_underscore
         )
         or
