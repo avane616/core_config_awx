@@ -16,142 +16,239 @@
     validate_ssl: false
  
   tasks:
+
+  ---
+- name: Find Nutanix container ID from Linux disk UUID
+  hosts: localhost
+  connection: local
+  gather_facts: false
  
-    - name: Normalize disk UUID
+  vars:
+    prism_central_url: "https://dnkhovpcp001:9440"
+ 
+    # Linux/Nutanix disk UUID
+    disk_uuid: "88d2a1bb-14f1-43ba-88f4-85e7c43bfe38"
+ 
+    # Pass these securely from AWX credential/env vars
+    prism_username: "{{ lookup('env', 'PRISM_USERNAME') }}"
+    prism_password: "{{ lookup('env', 'PRISM_PASSWORD') }}"
+ 
+    validate_ssl: false
+ 
+  tasks:
+ 
+    - name: Normalize disk UUID formats
       set_fact:
-        disk_uuid_normalized: "{{ disk_uuid | lower | replace('_', '-') }}"
+        disk_uuid_dash: "{{ disk_uuid | lower | replace('_', '-') }}"
+        disk_uuid_underscore: "{{ disk_uuid | lower | replace('-', '_') }}"
  
-    - name: Validate Prism credentials are provided
+    - name: Validate Prism credentials
       assert:
         that:
           - prism_username is defined
           - prism_username | length > 0
           - prism_password is defined
           - prism_password | length > 0
-        fail_msg: "Prism Central username/password not found. Pass PRISM_USERNAME and PRISM_PASSWORD from AWX credential."
+        fail_msg: "Prism username/password not found. Please pass them from AWX credential."
  
-    #####################################################################
-    # Search VM disks
-    #####################################################################
- 
-    - name: Get VM list from Prism Central
+    - name: Query Prism Central virtual disks API
       uri:
-        url: "{{ prism_central_url }}/api/nutanix/v3/vms/list"
-        method: POST
+        url: "{{ prism_central_url }}/api/nutanix/v2.0/virtual_disks/"
+        method: GET
         user: "{{ prism_username }}"
         password: "{{ prism_password }}"
         force_basic_auth: true
         validate_certs: "{{ validate_ssl }}"
         headers:
-          Content-Type: "application/json"
           Accept: "application/json"
-        body_format: json
-        body:
-          kind: "vm"
-          length: 500
-          offset: 0
-      register: vm_list
+      register: virtual_disks
       #no_log: true
  
-    - name: Initialize VM disk match list
+    - name: Initialize matched disk list
       set_fact:
-        vm_disk_matches: []
+        matched_disks: []
  
-    - name: Find matching disk UUID under VM disk list
+    - name: Search matching virtual disk UUID
       set_fact:
-        vm_disk_matches: >-
-          {{
-            vm_disk_matches +
-            [
-              {
-                'source': 'vm',
-                'vm_name': item.0.status.name | default(item.0.spec.name | default('unknown')),
-                'vm_uuid': item.0.metadata.uuid | default('unknown'),
-                'disk_uuid': item.1.uuid | default(item.1.disk_address.device_uuid | default('unknown')),
-                'container_id': item.1.storage_config.storage_container_reference.uuid | default('not_found'),
-                'container_name': item.1.storage_config.storage_container_reference.name | default('not_found')
-              }
-            ]
-          }}
-      loop: "{{ vm_list.json.entities | default([]) | subelements('spec.resources.disk_list', skip_missing=True) }}"
-      when:
-        - item.1 is defined
-        - >
-          (
-            item.1.uuid | default(item.1.disk_address.device_uuid | default('')) | lower | replace('_', '-')
-          ) == disk_uuid_normalized
- 
-    #####################################################################
-    # Search Volume Group disks also, if applicable
-    #####################################################################
- 
-    - name: Get Volume Group list from Prism Central
-      uri:
-        url: "{{ prism_central_url }}/api/nutanix/v3/volume_groups/list"
-        method: POST
-        user: "{{ prism_username }}"
-        password: "{{ prism_password }}"
-        force_basic_auth: true
-        validate_certs: "{{ validate_ssl }}"
-        headers:
-          Content-Type: "application/json"
-          Accept: "application/json"
-        body_format: json
-        body:
-          kind: "volume_group"
-          length: 500
-          offset: 0
-      register: vg_list
-      no_log: true
-      failed_when: false
- 
-    - name: Initialize Volume Group disk match list
-      set_fact:
-        vg_disk_matches: []
- 
-    - name: Find matching disk UUID under Volume Group disk list
-      set_fact:
-        vg_disk_matches: >-
-          {{
-            vg_disk_matches +
-            [
-              {
-                'source': 'volume_group',
-                'volume_group_name': item.0.status.name | default(item.0.spec.name | default('unknown')),
-                'volume_group_uuid': item.0.metadata.uuid | default('unknown'),
-                'disk_uuid': item.1.uuid | default('unknown'),
-                'container_id': item.1.storage_container_reference.uuid | default(item.1.storage_config.storage_container_reference.uuid | default('not_found')),
-                'container_name': item.1.storage_container_reference.name | default(item.1.storage_config.storage_container_reference.name | default('not_found'))
-              }
-            ]
-          }}
-      loop: "{{ vg_list.json.entities | default([]) | subelements('spec.resources.disk_list', skip_missing=True) }}"
-      when:
-        - vg_list.json is defined
-        - item.1 is defined
-        - >
-          (
-            item.1.uuid | default('') | lower | replace('_', '-')
-          ) == disk_uuid_normalized
- 
-    #####################################################################
-    # Consolidated Result
-    #####################################################################
- 
-    - name: Combine all matches
-      set_fact:
-        all_matches: "{{ vm_disk_matches + vg_disk_matches }}"
+        matched_disks: "{{ matched_disks + [item] }}"
+      loop: "{{ virtual_disks.json.entities | default([]) }}"
+      when: >
+        (
+          item.uuid | default('') | lower == disk_uuid_dash
+        )
+        or
+        (
+          item.uuid | default('') | lower == disk_uuid_underscore
+        )
+        or
+        (
+          item.disk_uuid | default('') | lower == disk_uuid_dash
+        )
+        or
+        (
+          item.disk_uuid | default('') | lower == disk_uuid_underscore
+        )
+        or
+        (
+          item.vdisk_uuid | default('') | lower == disk_uuid_dash
+        )
+        or
+        (
+          item.vdisk_uuid | default('') | lower == disk_uuid_underscore
+        )
  
     - name: Fail if disk UUID is not found
       fail:
-        msg: "Disk UUID {{ disk_uuid }} was not found in Prism Central VM disks or Volume Groups."
-      when: all_matches | length == 0
+        msg: "Disk UUID {{ disk_uuid }} was not found in Prism Central virtual disks API."
+      when: matched_disks | length == 0
  
-    - name: Display matched container ID
+    - name: Show matched virtual disk details
       debug:
         msg:
-          - "Disk UUID      : {{ disk_uuid }}"
-          - "Source         : {{ all_matches[0].source }}"
-          - "Container ID   : {{ all_matches[0].container_id }}"
-          - "Container Name : {{ all_matches[0].container_name | default('not_found') }}"
-          - "Full Match     : {{ all_matches }}"
+          - "Disk UUID searched       : {{ disk_uuid }}"
+          - "Matched UUID            : {{ matched_disks[0].uuid | default('not_found') }}"
+          - "Storage Container UUID  : {{ matched_disks[0].storage_container_uuid | default('not_found') }}"
+          - "Storage Container ID    : {{ matched_disks[0].storage_container_id | default('not_found') }}"
+          - "Disk Size Bytes         : {{ matched_disks[0].disk_capacity_in_bytes | default('not_found') }}"
+          - "VM UUID                 : {{ matched_disks[0].vm_uuid | default('not_found') }}"
+          - "Full Matched Object     : {{ matched_disks[0] }}"
+ 
+ 
+    # - name: Normalize disk UUID
+    #   set_fact:
+    #     disk_uuid_normalized: "{{ disk_uuid | lower | replace('_', '-') }}"
+ 
+    # - name: Validate Prism credentials are provided
+    #   assert:
+    #     that:
+    #       - prism_username is defined
+    #       - prism_username | length > 0
+    #       - prism_password is defined
+    #       - prism_password | length > 0
+    #     fail_msg: "Prism Central username/password not found. Pass PRISM_USERNAME and PRISM_PASSWORD from AWX credential."
+ 
+    # #####################################################################
+    # # Search VM disks
+    # #####################################################################
+ 
+    # - name: Get VM list from Prism Central
+    #   uri:
+    #     url: "{{ prism_central_url }}/api/nutanix/v3/vms/list"
+    #     method: POST
+    #     user: "{{ prism_username }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: true
+    #     validate_certs: "{{ validate_ssl }}"
+    #     headers:
+    #       Content-Type: "application/json"
+    #       Accept: "application/json"
+    #     body_format: json
+    #     body:
+    #       kind: "vm"
+    #       length: 500
+    #       offset: 0
+    #   register: vm_list
+    #   #no_log: true
+ 
+    # - name: Initialize VM disk match list
+    #   set_fact:
+    #     vm_disk_matches: []
+ 
+    # - name: Find matching disk UUID under VM disk list
+    #   set_fact:
+    #     vm_disk_matches: >-
+    #       {{
+    #         vm_disk_matches +
+    #         [
+    #           {
+    #             'source': 'vm',
+    #             'vm_name': item.0.status.name | default(item.0.spec.name | default('unknown')),
+    #             'vm_uuid': item.0.metadata.uuid | default('unknown'),
+    #             'disk_uuid': item.1.uuid | default(item.1.disk_address.device_uuid | default('unknown')),
+    #             'container_id': item.1.storage_config.storage_container_reference.uuid | default('not_found'),
+    #             'container_name': item.1.storage_config.storage_container_reference.name | default('not_found')
+    #           }
+    #         ]
+    #       }}
+    #   loop: "{{ vm_list.json.entities | default([]) | subelements('spec.resources.disk_list', skip_missing=True) }}"
+    #   when:
+    #     - item.1 is defined
+    #     - >
+    #       (
+    #         item.1.uuid | default(item.1.disk_address.device_uuid | default('')) | lower | replace('_', '-')
+    #       ) == disk_uuid_normalized
+ 
+    # #####################################################################
+    # # Search Volume Group disks also, if applicable
+    # #####################################################################
+ 
+    # - name: Get Volume Group list from Prism Central
+    #   uri:
+    #     url: "{{ prism_central_url }}/api/nutanix/v3/volume_groups/list"
+    #     method: POST
+    #     user: "{{ prism_username }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: true
+    #     validate_certs: "{{ validate_ssl }}"
+    #     headers:
+    #       Content-Type: "application/json"
+    #       Accept: "application/json"
+    #     body_format: json
+    #     body:
+    #       kind: "volume_group"
+    #       length: 500
+    #       offset: 0
+    #   register: vg_list
+    #   no_log: true
+    #   failed_when: false
+ 
+    # - name: Initialize Volume Group disk match list
+    #   set_fact:
+    #     vg_disk_matches: []
+ 
+    # - name: Find matching disk UUID under Volume Group disk list
+    #   set_fact:
+    #     vg_disk_matches: >-
+    #       {{
+    #         vg_disk_matches +
+    #         [
+    #           {
+    #             'source': 'volume_group',
+    #             'volume_group_name': item.0.status.name | default(item.0.spec.name | default('unknown')),
+    #             'volume_group_uuid': item.0.metadata.uuid | default('unknown'),
+    #             'disk_uuid': item.1.uuid | default('unknown'),
+    #             'container_id': item.1.storage_container_reference.uuid | default(item.1.storage_config.storage_container_reference.uuid | default('not_found')),
+    #             'container_name': item.1.storage_container_reference.name | default(item.1.storage_config.storage_container_reference.name | default('not_found'))
+    #           }
+    #         ]
+    #       }}
+    #   loop: "{{ vg_list.json.entities | default([]) | subelements('spec.resources.disk_list', skip_missing=True) }}"
+    #   when:
+    #     - vg_list.json is defined
+    #     - item.1 is defined
+    #     - >
+    #       (
+    #         item.1.uuid | default('') | lower | replace('_', '-')
+    #       ) == disk_uuid_normalized
+ 
+    # #####################################################################
+    # # Consolidated Result
+    # #####################################################################
+ 
+    # - name: Combine all matches
+    #   set_fact:
+    #     all_matches: "{{ vm_disk_matches + vg_disk_matches }}"
+ 
+    # - name: Fail if disk UUID is not found
+    #   fail:
+    #     msg: "Disk UUID {{ disk_uuid }} was not found in Prism Central VM disks or Volume Groups."
+    #   when: all_matches | length == 0
+ 
+    # - name: Display matched container ID
+    #   debug:
+    #     msg:
+    #       - "Disk UUID      : {{ disk_uuid }}"
+    #       - "Source         : {{ all_matches[0].source }}"
+    #       - "Container ID   : {{ all_matches[0].container_id }}"
+    #       - "Container Name : {{ all_matches[0].container_name | default('not_found') }}"
+    #       - "Full Match     : {{ all_matches }}"
