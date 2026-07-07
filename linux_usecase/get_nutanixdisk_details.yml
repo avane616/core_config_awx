@@ -1,0 +1,116 @@
+---
+- name: Gather PV and Nutanix Disk UUID information
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  vars:
+    filesystem_mount: "/tmp"
+
+  tasks:
+
+    - name: Get device mapped to filesystem
+      command: "df {{ filesystem_mount }} --output=source | tail -1"
+      register: fs_device
+      changed_when: false
+
+    - name: Display filesystem device
+      debug:
+        msg: "Filesystem {{ filesystem_mount }} is on {{ fs_device.stdout }}"
+
+    - name: Get VG name
+      command: "lvs --noheadings -o vg_name {{ fs_device.stdout }}"
+      register: vg_name
+      changed_when: false
+
+    - name: Get PV backing the VG
+      command: "pvs --noheadings -o pv_name,vg_name"
+      register: pv_details
+      changed_when: false
+
+    - name: Extract PV name
+      set_fact:
+        pv_name: >-
+          {{
+            (
+              pv_details.stdout_lines
+              | select('search', vg_name.stdout | trim)
+              | list
+              | first
+            ).split()[0]
+          }}
+
+    - name: Display PV name
+      debug:
+        msg: "Physical Volume: {{ pv_name }}"
+
+    - name: Get VG free space
+      command: "vgs --noheadings -o vg_free {{ vg_name.stdout | trim }}"
+      register: vg_free
+      changed_when: false
+
+    - name: Display available VG space
+      debug:
+        msg: "Available VG Free Space: {{ vg_free.stdout | trim }}"
+
+    - name: Get parent disk from PV
+      shell: |
+        lsblk -no PKNAME {{ pv_name }}
+      register: parent_disk
+      changed_when: false
+
+    - name: Set disk device
+      set_fact:
+        disk_device: "/dev/{{ parent_disk.stdout | trim }}"
+
+    - name: Display disk device
+      debug:
+        msg: "Underlying Disk: {{ disk_device }}"
+
+    - name: Get udev information
+      shell: |
+        udevadm info --query=all --name={{ disk_device }} | egrep 'ID_SERIAL=|ID_WWN='
+      register: udev_info
+      changed_when: false
+
+    - name: Display udev information
+      debug:
+        var: udev_info.stdout_lines
+
+    - name: Extract disk serial
+      set_fact:
+        disk_serial: >-
+          {{
+            udev_info.stdout_lines
+            | select('search','ID_SERIAL=')
+            | first
+            | regex_replace('ID_SERIAL=','')
+          }}
+
+    - name: Display disk serial
+      debug:
+        msg: "Serial: {{ disk_serial }}"
+
+    - name: Extract Nutanix Disk UUID
+      set_fact:
+        nutanix_disk_uuid: >-
+          {{
+            disk_serial
+            | regex_search('[0-9a-fA-F]{8}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{12}')
+          }}
+
+    - name: Display Nutanix Disk UUID
+      debug:
+        msg: "Nutanix Disk UUID: {{ nutanix_disk_uuid | default('UUID not found') }}"
+
+    - name: Final Summary
+      debug:
+        msg:
+          - "Filesystem        : {{ filesystem_mount }}"
+          - "LV Device         : {{ fs_device.stdout }}"
+          - "VG                : {{ vg_name.stdout | trim }}"
+          - "PV                : {{ pv_name }}"
+          - "VG Free Space     : {{ vg_free.stdout | trim }}"
+          - "Disk Device       : {{ disk_device }}"
+          - "Disk Serial       : {{ disk_serial }}"
+          - "Nutanix Disk UUID : {{ nutanix_disk_uuid | default('Not Found') }}"
