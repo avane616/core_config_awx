@@ -52,21 +52,45 @@
       fail:
         msg: "Logical Volume {{ lv_path }} does not exist"
       when: not lv_check.stat.exists
+
+    - name: Extend logical volume by 1GB
+      command: lvextend -L +1G /dev/vg00/lvol5
+      register: lvextend_result
+      changed_when: "'successfully resized' in lvextend_result.stdout or lvextend_result.rc == 0"
  
-    - name: Extend logical volume by 1GB and resize filesystem
-      community.general.lvol:
-        vg: "{{ vg_name }}"
-        lv: "{{ lv_name }}"
-        size: "{{ extend_size }}"
-        resizefs: true
+    - name: Get filesystem type
+      command: df -T /tmp
+      register: fs_type
  
-    - name: Display filesystem usage
+    - name: Resize XFS filesystem
+      command: xfs_growfs /tmp
+      when: "'xfs' in fs_type.stdout"
+ 
+    - name: Resize EXT filesystem
+      command: resize2fs /dev/vg00/lvol5
+      when: "'ext4' in fs_type.stdout or 'ext3' in fs_type.stdout"
+ 
+    - name: Verify filesystem size
       command: df -h /tmp
-      register: tmp_fs
+      register: df_output
  
-    - name: Show filesystem details
-      debug:
-        var: tmp_fs.stdout_lines
+    - debug:
+        var: df_output.stdout_lines
+ 
+    # - name: Extend logical volume by 1GB and resize filesystem
+    #   community.general.lvol:
+    #     vg: "{{ vg_name }}"
+    #     lv: "{{ lv_name }}"
+    #     size: "{{ extend_size }}"
+    #     resizefs: true
+ 
+    # - name: Display filesystem usage
+    #   command: df -h /tmp
+    #   register: tmp_fs
+ 
+    # - name: Show filesystem details
+    #   debug:
+    #     var: tmp_fs.stdout_lines
         
     # - name: Run code compute tasks
     #   include_tasks:
