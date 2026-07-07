@@ -52,34 +52,30 @@
       set_fact:
         matched_disks: "{{ matched_disks + [item] }}"
       loop: "{{ virtual_disks.json.entities | default([]) }}"
-      when: >
-        (
-          item.uuid | default('') | lower == disk_uuid_dash
-        )
-        or
-        (
-          item.uuid | default('') | lower == disk_uuid_underscore
-        )
-        or
-        (
-          item.disk_uuid | default('') | lower == disk_uuid_dash
-        )
-        or
-        (
-          item.disk_uuid | default('') | lower == disk_uuid
-        )
-        or
-        (
-          item.disk_uuid | default('') | lower == disk_uuid_underscore
-        )
-        or
-        (
-          item.vdisk_uuid | default('') | lower == disk_uuid_dash
-        )
-        or
-        (
-          item.vdisk_uuid | default('') | lower == disk_uuid_underscore
-        )
+      # when: >
+      #   (
+      #     item.uuid | default('') | lower == disk_uuid_dash
+        # )
+        # or
+        # (
+        #   item.uuid | default('') | lower == disk_uuid_underscore
+        # )
+        # or
+        # (
+        #   item.disk_uuid | default('') | lower == disk_uuid_dash
+        # )
+        # or
+        # (
+        #   item.disk_uuid | default('') | lower == disk_uuid_underscore
+        # )
+        # or
+        # (
+        #   item.vdisk_uuid | default('') | lower == disk_uuid_dash
+        # )
+        # or
+        # (
+        #   item.vdisk_uuid | default('') | lower == disk_uuid_underscore
+        # )
  
     - name: Fail if disk UUID is not found
       fail:
