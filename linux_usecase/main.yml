@@ -54,7 +54,7 @@
       when: not lv_check.stat.exists
 
     - name: Extend logical volume by 1GB
-      command: lvextend -L +1G /dev/vg00/lvol5
+      command: lvextend -L -2G /dev/vg00/lvol5
       register: lvextend_result
       changed_when: "'successfully resized' in lvextend_result.stdout or lvextend_result.rc == 0"
  
