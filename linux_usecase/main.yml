@@ -40,7 +40,7 @@
     vg_name: vg00
     lv_name: lvol5
     lv_path: "/dev/vg00/lvol5"
-    extend_size: "+1G"
+    extend_size: "-1G"
  
   tasks:
     - name: Verify LV exists
