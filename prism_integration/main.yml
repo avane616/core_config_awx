@@ -3,11 +3,19 @@
   hosts: localhost
   gather_facts: no
 
+  vars:
+    prism_host: "dnkhovpcp001"
+    prism_user: "automation_poc"
+
   tasks:
+
     - name: Test Prism Central API
       uri:
-        url: "https://dnkhovpcp001:9440/api/nutanix/v3/clusters/list"
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/clusters/list"
         method: POST
+        url_username: "{{ prism_user }}"
+        url_password: "{{ prism_password }}"
+        force_basic_auth: yes
         validate_certs: no
         body_format: json
         body:
@@ -18,24 +26,52 @@
           - 401
       register: result
 
-    - name: Show response
+    - name: Show HTTP Status
       debug:
         var: result.status
- 
+
+    - name: Show Response
+      debug:
+        var: result.json
 
 # ---
-# - name: Test connectivity from AWX to Prism Central
+# - name: Test Prism Central API connectivity
 #   hosts: localhost
 #   gather_facts: no
- 
+
 #   tasks:
-#     - name: Check TCP connectivity to Prism Central port 9440
-#       wait_for:
-#         host: dnkhovpcp001
-#         port: 9440
-#         timeout: 10
-#       register: connectivity_test
- 
-#     - name: Display connectivity result
+#     - name: Test Prism Central API
+#       uri:
+#         url: "https://dnkhovpcp001:9440/api/nutanix/v3/clusters/list"
+#         method: POST
+#         validate_certs: no
+#         body_format: json
+#         body:
+#           kind: cluster
+#           length: 1
+#         status_code:
+#           - 200
+#           - 401
+#       register: result
+
+#     - name: Show response
 #       debug:
-#         msg: "Successfully connected to dnkhovpcp001:9440"
+#         var: result.status
+ 
+
+# # ---
+# # - name: Test connectivity from AWX to Prism Central
+# #   hosts: localhost
+# #   gather_facts: no
+ 
+# #   tasks:
+# #     - name: Check TCP connectivity to Prism Central port 9440
+# #       wait_for:
+# #         host: dnkhovpcp001
+# #         port: 9440
+# #         timeout: 10
+# #       register: connectivity_test
+ 
+# #     - name: Display connectivity result
+# #       debug:
+# #         msg: "Successfully connected to dnkhovpcp001:9440"
