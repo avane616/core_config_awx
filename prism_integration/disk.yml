@@ -7,6 +7,7 @@
   vars:
     prism_central_url: "https://dnkhovpcp001:9440"
     disk_uuid: "88d2a1bb-14f1-43ba-88f4-85e7c43bfe38"
+    prism_username: "automation_poc"
  
     # Recommended: pass these from AWX Credential or extra vars
     # prism_username: "{{ lookup('env', 'PRISM_USERNAME') }}"
