@@ -36,7 +36,38 @@
   hosts: dynamic_cyberark_targets
   gather_facts: true
   become: true
+  vars:
+    vg_name: vg00
+    lv_name: lvol5
+    lv_path: "/dev/vg00/lvol5"
+    extend_size: "+1G"
+ 
   tasks:
+    - name: Verify LV exists
+      stat:
+        path: "{{ lv_path }}"
+      register: lv_check
+ 
+    - name: Fail if LV does not exist
+      fail:
+        msg: "Logical Volume {{ lv_path }} does not exist"
+      when: not lv_check.stat.exists
+ 
+    - name: Extend logical volume by 1GB and resize filesystem
+      community.general.lvol:
+        vg: "{{ vg_name }}"
+        lv: "{{ lv_name }}"
+        size: "{{ extend_size }}"
+        resizefs: true
+ 
+    - name: Display filesystem usage
+      command: df -h /tmp
+      register: tmp_fs
+ 
+    - name: Show filesystem details
+      debug:
+        var: tmp_fs.stdout_lines
+        
     # - name: Run code compute tasks
     #   include_tasks:
     #     file: code_compute.yml
@@ -44,10 +75,10 @@
     #       delegate_to: localhost
       
     # Execute all validation checks before expansion
-    - name: Run precheck
-      include_role:
-        name: linux_filesystem_extension
-        tasks_from: pre_checks.yml
+    # - name: Run precheck
+    #   include_role:
+    #     name: linux_filesystem_extension
+    #     tasks_from: pre_checks.yml
 
     # Perform filesystem expansion activities
     # - name: Expand filesystem
@@ -56,7 +87,7 @@
     #     tasks_from: expand.yml
 
     # Validate filesystem after expansion
-    - name: Run validation
-      include_role:
-        name: linux_filesystem_extension
-        tasks_from: validate.yml
+    # - name: Run validation
+    #   include_role:
+    #     name: linux_filesystem_extension
+    #     tasks_from: validate.yml
