@@ -20,7 +20,7 @@
  
     - name: Create Nutanix Volume Group with 2GB disk
       uri:
-        url: "https://{{ prism_central_url }}/api/nutanix/v3/volume_groups"
+        url: "{{ prism_central_url }}/api/nutanix/v3/volume_groups"
         method: POST
         user: "{{ prism_username }}"
         password: "{{ prism_password }}"
