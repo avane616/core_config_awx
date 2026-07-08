@@ -8,7 +8,7 @@
     #prism_central_url: "https://dnkhovpcp001:9440"
     prism_central_url: "https://10.45.203.90:9440/"
     #disk_uuid: "88d2a1bb-14f1-43ba-88f4-85e7c43bfe38"
-    prism_username: "Automation"
+    prism_username: "automation"
     # prism_host: "dnkhovpcp001"
     # prism_port: "9440"
  
