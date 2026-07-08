@@ -13,8 +13,8 @@
  
     storage_container_uuid: "f5f5dedf-0c16-4057-8b5c-2e5a5cc8e80d"
  
-    volume_name: "ansible-test-disk-01"
-    volume_size_bytes: 2147483648   # 2 GB
+    volume_group_name: "ansible-test-disk-01"
+    disk_size_bytes: 2147483648   # 2 GB
  
   tasks:
     - name: Create Nutanix Volume Group with 2GB disk
