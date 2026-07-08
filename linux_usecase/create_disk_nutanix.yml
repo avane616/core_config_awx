@@ -46,7 +46,7 @@
                       kind: "storage_container"
                       uuid: "{{ storage_container_uuid }}"
       register: create_vg
-      no_log: true
+      #no_log: true
   
     - name: Show result
       debug:
