@@ -4,8 +4,9 @@
   gather_facts: no
 
   vars:
-    prism_host: "dnkhovpcp001"
-    prism_user: "automation_poc"
+    #prism_host: "dnkhovpcp001"
+    prism_host: "10.45.203.90"
+    prism_user: "automation"
 
   tasks:
 
