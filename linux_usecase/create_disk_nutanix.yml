@@ -17,7 +17,6 @@
     volume_size_bytes: 2147483648   # 2 GB
  
   tasks:
- 
     - name: Create Nutanix Volume Group with 2GB disk
       uri:
         url: "{{ prism_central_url }}/api/nutanix/v3/volume_groups"
@@ -26,23 +25,60 @@
         password: "{{ prism_password }}"
         force_basic_auth: true
         validate_certs: false
+        status_code:
+          - 200
+          - 201
+          - 202
         headers:
           Content-Type: "application/json"
           Accept: "application/json"
         body_format: json
         body:
+          metadata:
+            kind: "volume_group"
           spec:
-            name: "{{ volume_name }}"
+            name: "{{ volume_group_name }}"
             resources:
               disk_list:
-                - disk_size_bytes: "{{ volume_size_bytes }}"
-                  storage_container_reference:
-                    kind: storage_container
-                    uuid: "{{ storage_container_uuid }}"
-          metadata:
-            kind: volume_group
-      register: create_volume
- 
-    - name: Display result
+                - disk_size_bytes: "{{ disk_size_bytes }}"
+                  storage_config:
+                    storage_container_reference:
+                      kind: "storage_container"
+                      uuid: "{{ storage_container_uuid }}"
+      register: create_vg
+      no_log: true
+  
+    - name: Show result
       debug:
-        var: create_volume.json
+        msg:
+          - "Volume Group creation submitted."
+          - "Task UUID: {{ create_vg.json.status.execution_context.task_uuid | default('not_found') }}"
+          - "Volume Group UUID: {{ create_vg.json.metadata.uuid | default('not_available_yet') }}"
+    # - name: Create Nutanix Volume Group with 2GB disk
+    #   uri:
+    #     url: "{{ prism_central_url }}/api/nutanix/v3/volume_groups"
+    #     method: POST
+    #     user: "{{ prism_username }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: true
+    #     validate_certs: false
+    #     headers:
+    #       Content-Type: "application/json"
+    #       Accept: "application/json"
+    #     body_format: json
+    #     body:
+    #       spec:
+    #         name: "{{ volume_name }}"
+    #         resources:
+    #           disk_list:
+    #             - disk_size_bytes: "{{ volume_size_bytes }}"
+    #               storage_container_reference:
+    #                 kind: storage_container
+    #                 uuid: "{{ storage_container_uuid }}"
+    #       metadata:
+    #         kind: volume_group
+    #   register: create_volume
+ 
+    # - name: Display result
+    #   debug:
+    #     var: create_volume.json
