@@ -72,7 +72,7 @@
     #   changed_when: "'successfully resized' in lvextend_result.stdout or lvextend_result.rc == 0"
  
     - name: Get filesystem type
-      command: df -T "{{ filesystem }}"
+      command: df -T "{{ filesystem_name }}"
       register: fs_type
  
     # - name: Resize XFS filesystem
@@ -84,7 +84,7 @@
     #   when: "'ext4' in fs_type.stdout or 'ext3' in fs_type.stdout"
  
     - name: Verify filesystem size
-      command: df -h "{{ filesystem }}"
+      command: df -h "{{ filesystem_name }}"
       register: df_output
  
     - debug:
