@@ -242,12 +242,12 @@
       debug:
         var: variable_map
     
-    - name: Extract key variables
-      when: first_sc_task is defined
-      set_fact:
-        os_type: "{{ variable_map['OS Type'] | default('') }}"
-        environment: "{{ variable_map['Environment'] | default('') }}"
-        ChangeNumber: "{{ ritm_number | default('') }}"
+    # - name: Extract key variables
+    #   when: first_sc_task is defined
+    #   set_fact:
+    #     os_type: "{{ variable_map['OS Type'] | default('') }}"
+    #     environment: "{{ variable_map['Environment'] | default('') }}"
+    #     ChangeNumber: "{{ ritm_number | default('') }}"
     
     # Lookup requester by name or email (since variable_map may have display value, not sys_id)
     
