@@ -101,7 +101,7 @@
       loop_control:
         label: "{{ item.json.result[0].number }}"
 
-        - name: Get variable mappings for each RITM with display values
+    - name: Get variable mappings for each RITM with display values
       uri:
         url: "{{ servicenow_instance }}/api/now/table/sc_item_option_mtom?sysparm_query=request_item.number={{ ritm_number }}&sysparm_display_value=true"
         method: GET
