@@ -79,27 +79,27 @@
       loop_control:
         label: "{{ item }}"
 
-    - name: Update RITM state and work notes
-      uri:
-        url: "{{ servicenow_instance }}/api/now/table/sc_req_item/{{ item.json.result[0].sys_id }}"
-        method: PUT
-        user: "{{ lookup('env', 'user') }}"
-        password: "{{ lookup('env', 'password') }}"
-        force_basic_auth: yes
-        headers:
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          state: "2"  # Work in Progress
-          work_notes: |
-            This request has been picked up by the VELUX Automation Team.
-            Initial analysis is underway and work has commenced.
-            Further updates will be provided as progress continues.
-        return_content: yes
-        status_code: 200
-      loop: "{{ ritm_details.results }}"
-      loop_control:
-        label: "{{ item.json.result[0].number }}"
+    # - name: Update RITM state and work notes
+    #   uri:
+    #     url: "{{ servicenow_instance }}/api/now/table/sc_req_item/{{ item.json.result[0].sys_id }}"
+    #     method: PUT
+    #     user: "{{ lookup('env', 'user') }}"
+    #     password: "{{ lookup('env', 'password') }}"
+    #     force_basic_auth: yes
+    #     headers:
+    #       Content-Type: "application/json"
+    #     body_format: json
+    #     body:
+    #       state: "2"  # Work in Progress
+    #       work_notes: |
+    #         This request has been picked up by the VELUX Automation Team.
+    #         Initial analysis is underway and work has commenced.
+    #         Further updates will be provided as progress continues.
+    #     return_content: yes
+    #     status_code: 200
+    #   loop: "{{ ritm_details.results }}"
+    #   loop_control:
+    #     label: "{{ item.json.result[0].number }}"
 
     - name: Get variable mappings for each RITM with display values
       uri:
@@ -125,7 +125,7 @@
             mtom_response.results
             | map(attribute='json.result')
             | flatten
-            | map(attribute='sc_item_option.value')
+            | map(attribute='sc_item_option.display_value')
             | list
           }}
 
