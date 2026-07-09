@@ -1,0 +1,58 @@
+---
+# Collect operating system details
+- name: Gather system facts
+  setup:
+
+# Verify that requested filesystem exists
+- name: Verify filesystem exists
+  command: df -P {{ filesystem_name }}
+  register: filesystem_check
+  changed_when: false
+
+# Get filesystem utilization percentage
+- name: Get filesystem utilization
+  shell: |
+    df -P {{ filesystem_name }} | tail -1 | awk '{print $5}' | sed 's/%//'
+  register: fs_utilization
+  changed_when: false
+
+# Identify logical volume associated with filesystem
+- name: Get logical volume
+  shell: |
+    df -P {{ filesystem_name }} | tail -1 | awk '{print $1}'
+  register: lv_name
+  changed_when: false
+
+# Get volume group of logical volume
+- name: Get volume group
+  shell: |
+    lvs --noheadings -o vg_name {{ lv_name.stdout }} | xargs
+  register: vg_name
+  changed_when: false
+  when: ansible_system == "Linux"
+
+# Get physical volume associated with volume group
+- name: Get physical volume
+  shell: |
+    pvs --noheadings -o pv_name,vg_name | grep "{{ vg_name.stdout }}" | awk '{print $1}' | head -1
+  register: pv_name
+  changed_when: false
+  when: ansible_system == "Linux"
+
+# Capture physical volume size before storage rescan
+# - name: Get PV size before rescan
+#   command: pvs --noheadings -o pv_size {{ pv_name.stdout }}
+#   register: pv_size_before
+#   changed_when: false
+#   when: ansible_system == "Linux"
+
+# Display collected precheck information
+- name: Display precheck details
+  debug:
+    msg:
+      - "Filesystem: {{ filesystem_name }}"
+      - "Filesystem Utilization: {{ fs_utilization.stdout }}%"
+      - "Logical Volume: {{ lv_name.stdout }}"
+      - "Volume Group: {{ vg_name.stdout | default('N/A') }}"
+      - "Physical Volume: {{ pv_name.stdout | default('N/A') }}"
+      #- "PV Size Before Rescan: {{ pv_size_before.stdout | default('N/A') }}"
