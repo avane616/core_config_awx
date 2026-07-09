@@ -103,7 +103,7 @@
 
     - name: Get variable mappings for each RITM with display values
       uri:
-        url: "{{ servicenow_instance }}/api/now/table/sc_item_option_mtom?sysparm_query=request_item.number={{ ritm_number }}&sysparm_display_value=true"
+        url: "{{ servicenow_instance }}/api/now/table/sc_item_option_mtom?sysparm_query=request_item.number={{ item }}&sysparm_display_value=true"
         method: GET
         user: "{{ lookup('env', 'user') }}"
         password: "{{ lookup('env', 'password') }}"
@@ -111,15 +111,27 @@
         return_content: yes
         headers:
           Accept: "application/json"
+      loop: "{{ ritm_numbers }}"
       register: mtom_response
 
     - name: Show mtom response
       debug: 
         msg: "{{ mtom_response }}"
 
-    - name: Extract variable sys_ids from sc_item_option links
+    - name: Extract variable sys_ids from all RITMs
       set_fact:
-        variable_ids: "{{ mtom_response.json.result | map(attribute='sc_item_option.display_value') | list }}"
+        variable_ids: >-
+          {{
+            mtom_response.results
+            | map(attribute='json.result')
+            | flatten
+            | map(attribute='sc_item_option.value')
+            | list
+          }}
+
+    # - name: Extract variable sys_ids from sc_item_option links
+    #   set_fact:
+    #     variable_ids: "{{ mtom_response.json.result | map(attribute='sc_item_option.display_value') | list }}"
 
     - name: Get variable values with item_option details
       uri:
