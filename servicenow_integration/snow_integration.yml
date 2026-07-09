@@ -6,6 +6,21 @@
     catalog_item_name: "FileSystem%20Extension"
     assignment_group: "Nutanix%20Automation%20group"
   tasks:
+    - name: Get Assignment Group sys_id
+      uri:
+        url: "https://{{ servicenow_instance }}/api/now/table/sys_user_group?sysparm_query=name={{ assignment_group | urlencode }}"
+        method: GET
+        user: "{{ lookup('env', 'user') }}"
+        password: "{{ lookup('env', 'password') }}"
+        force_basic_auth: true
+        return_content: true
+        validate_certs: false
+      register: group_response
+      
+    - name: Capture Assignment Group sys_id
+      set_fact:
+        assignment_group_sys_id: "{{ group_response.json.result[0].sys_id }}"
+
   
     # Get open RITMs for the catalog item
     - name: Get open RITMs for the catalog item
