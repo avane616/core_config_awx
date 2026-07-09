@@ -4,6 +4,7 @@
   vars: 
     servicenow_instance: "hcltechdemosls4.service-now.com"
     catalog_item_name: "FileSystem%20Extension"
+    assignment_group: "Nutanix%20Automation%20group"
   tasks:
   
     # Get open RITMs for the catalog item
