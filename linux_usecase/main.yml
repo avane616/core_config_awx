@@ -2,6 +2,9 @@
 - name: Prepare dynamic targets
   hosts: localhost
   gather_facts: yes
+  vars:
+    servicenow_instance: "https://hcltechdemosls4.service-now.com"
+    assignment_group: "Nutanix%20Automation%20group"
 
   tasks:
     - name: Include variables
@@ -10,6 +13,9 @@
 
     - name: Run code compute tasks
       include_tasks: code_compute.yml
+
+    - name: Run code compute tasks
+      include_tasks: snow.yml
 
     # Fetch Credentials from CyberArk
     - name: Fetch CyberArk credentials
