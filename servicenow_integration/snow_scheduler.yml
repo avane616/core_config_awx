@@ -10,7 +10,7 @@
     - name: Get open RITMs for the catalog item
       uri:
         #url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^stateIN1,2&sysparm_fields=sys_id,number,variables"
-        url: "https://{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^cat_item.name={{ catalog_item_name }}^stateIN1,2&sysparm_fields=sys_id,number,variables"
+        url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^cat_item.name={{ catalog_item_name }}^stateIN1,2&sysparm_fields=sys_id,number,variables"
         method: GET
         user: "{{ lookup('env', 'user') }}"
         password: "{{ lookup('env', 'password') }}"
