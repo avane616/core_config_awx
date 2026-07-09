@@ -56,3 +56,10 @@
       - "Volume Group: {{ vg_name.stdout | default('N/A') }}"
       - "Physical Volume: {{ pv_name.stdout | default('N/A') }}"
       #- "PV Size Before Rescan: {{ pv_size_before.stdout | default('N/A') }}"
+
+- name: Captured Details
+  set_fact:
+    vg_name: "{{ vg_name.stdout | default('N/A') }}"
+    lv_name: 
+    lv_path: "{{ lv_name.stdout }}"
+    extend_size: "-1G"
