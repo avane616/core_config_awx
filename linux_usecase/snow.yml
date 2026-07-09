@@ -77,7 +77,14 @@
         
     - name: Map variables by order
       set_fact:
-        target_server_ip: "{{ variable_response.json.result | selectattr('order', 'equalto', '5') | map(attribute='value') | first }}"
+        target_linux_ips: >-
+          {{
+            variable_response.json.result
+            | selectattr('order', 'equalto', '5')
+            | map(attribute='value')
+            | list
+          }}
+        #target_linux_ips: "{{ variable_response.json.result | selectattr('order', 'equalto', '5') | map(attribute='value') | first }}"
         filesystem: "{{ variable_response.json.result | selectattr('order', 'equalto', '4') | map(attribute='value') | first }}"
         comments: "{{ variable_response.json.result | selectattr('order', 'equalto', '7') | map(attribute='value') | first }}"
 
