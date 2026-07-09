@@ -304,6 +304,6 @@
       register: n_catalog_tasks      
     
     - name: Display Catalog task details
-#   when: first_sc_task is defined
-#   debug:
-#     msg: "{{ n_catalog_tasks }}"
+      when: first_sc_task is defined
+      debug:
+        msg: "{{ n_catalog_tasks }}"
