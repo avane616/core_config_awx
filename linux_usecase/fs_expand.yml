@@ -1,0 +1,129 @@
+---
+- name: Prepare dynamic targets
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    servicenow_instance: "https://hcltechdemosls4.service-now.com"
+    assignment_group: "Nutanix%20Automation%20group"
+
+  tasks:
+    - name: Include variables
+      include_vars:
+        file: vars.yml
+
+    - name: Run code compute tasks
+      include_tasks: code_compute.yml
+
+    - name: Run code compute tasks
+      include_tasks: snow.yml
+
+    # Fetch Credentials from CyberArk
+    - name: Fetch CyberArk credentials
+      include_role:
+        name: tools_integration
+        tasks_from: cyberark_integration.yml
+
+    - name: Dynamically inject target host with CyberArk credentials
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: dynamic_cyberark_targets
+        ansible_user: "{{ target_linux_user }}"
+        ansible_password: "{{ target_linux_password }}"
+        ansible_ssh_auth_method: password       
+        # Privilege Escalation
+        ansible_become: true
+        ansible_become_method: sudo
+        ansible_become_user: root
+        ansible_become_password: "{{ target_linux_password }}"
+      #no_log: true
+      loop: "{{ target_linux_ips }}"
+
+- name: Phase 2 - Execute Tasks on Target Linux Machine
+  hosts: dynamic_cyberark_targets
+  gather_facts: true
+  become: true
+  # vars:
+  #   vg_name: vg00
+  #   lv_name: lvol5
+  #   lv_path: "/dev/vg00/lvol5"
+  #   extend_size: "-1G"
+ 
+  tasks:
+      # Execute all validation checks before expansion
+    - name: Run precheck
+      include_tasks: pre_checks.yml
+      # include_role:
+      #   name: linux_filesystem_extension
+      #   tasks_from: pre_checks.yml
+    - name: Verify LV exists
+      stat:
+        path: "{{ lv_path }}"
+      register: lv_check
+ 
+    - name: Fail if LV does not exist
+      fail:
+        msg: "Logical Volume {{ lv_path }} does not exist"
+      when: not lv_check.stat.exists
+
+    # - name: Extend logical volume by 1GB
+    #   command: lvextend -L -2G /dev/vg00/lvol5
+    #   register: lvextend_result
+    #   changed_when: "'successfully resized' in lvextend_result.stdout or lvextend_result.rc == 0"
+ 
+    - name: Get filesystem type
+      command: df -T "{{ filesystem }}"
+      register: fs_type
+ 
+    # - name: Resize XFS filesystem
+    #   command: xfs_growfs /tmp
+    #   when: "'xfs' in fs_type.stdout"
+ 
+    # - name: Resize EXT filesystem
+    #   command: resize2fs /dev/vg00/lvol5
+    #   when: "'ext4' in fs_type.stdout or 'ext3' in fs_type.stdout"
+ 
+    - name: Verify filesystem size
+      command: df -h "{{ filesystem }}"
+      register: df_output
+ 
+    - debug:
+        var: df_output.stdout_lines
+ 
+    # - name: Extend logical volume by 1GB and resize filesystem
+    #   community.general.lvol:
+    #     vg: "{{ vg_name }}"
+    #     lv: "{{ lv_name }}"
+    #     size: "{{ extend_size }}"
+    #     resizefs: true
+ 
+    # - name: Display filesystem usage
+    #   command: df -h /tmp
+    #   register: tmp_fs
+ 
+    # - name: Show filesystem details
+    #   debug:
+    #     var: tmp_fs.stdout_lines
+        
+    # - name: Run code compute tasks
+    #   include_tasks:
+    #     file: code_compute.yml
+    #     apply:
+    #       delegate_to: localhost
+      
+    # Execute all validation checks before expansion
+    # - name: Run precheck
+    #   include_role:
+    #     name: linux_filesystem_extension
+    #     tasks_from: pre_checks.yml
+
+    # Perform filesystem expansion activities
+    # - name: Expand filesystem
+    #   include_role:
+    #     name: linux_filesystem_extension
+    #     tasks_from: expand.yml
+
+    # Validate filesystem after expansion
+    # - name: Run validation
+    #   include_role:
+    #     name: linux_filesystem_extension
+    #     tasks_from: validate.yml
