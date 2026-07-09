@@ -97,7 +97,7 @@
     - name: Get Catalog Tasks for approved RITMs
       when: ritm_sys_ids | length > 0
       uri:
-        url: "https://{{ servicenow_instance }}/api/now/table/sc_task?sysparm_query=assignment_group={{ assignment_group }}^request_itemIN{{ ritm_sys_ids | join(',') }}"
+        url: "https://{{ servicenow_instance }}/api/now/table/sc_task?sysparm_query=assignment_group={{ assignment_group_sys_id }}^request_itemIN{{ ritm_sys_ids | join(',') }}"
         method: GET
         user: "{{ lookup('env', 'user') }}"
         password: "{{ lookup('env', 'password') }}"
