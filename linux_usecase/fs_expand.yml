@@ -29,7 +29,8 @@
         groups: dynamic_cyberark_targets
         ansible_user: "{{ target_linux_user }}"
         ansible_password: "{{ target_linux_password }}"
-        ansible_ssh_auth_method: password       
+        ansible_ssh_auth_method: password   
+        filesystem_name: "{{ filesystem_name }}"
         # Privilege Escalation
         ansible_become: true
         ansible_become_method: sudo
