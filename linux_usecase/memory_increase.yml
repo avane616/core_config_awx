@@ -140,7 +140,10 @@
         password: "{{ prism_password }}"
         force_basic_auth: true
         validate_certs: false
-        body_format: json
+        body_format: json           
+        status_code:
+          - 200
+          - 202
         body: "{{ vm_update_payload }}"
       register: memory_update
 
