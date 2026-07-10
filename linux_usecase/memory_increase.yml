@@ -79,34 +79,6 @@
         validate_certs: false
       register: vm_spec
 
-    # - set_fact:
-    #     spec_version_int: "{{ vm_spec.json.metadata.spec_version | int }}"
-
-    # - debug:
-    #     var: spec_version_int
-    
-    # - debug:
-    #     msg: "{{ spec_version_int | type_debug }}"
-
-    # - name: Build update payload
-    #   set_fact:
-    #     vm_update_payload:
-    #       api_version: "{{ vm_spec.json.api_version }}"
-    #       metadata:
-    #         kind: "{{ vm_spec.json.metadata.kind }}"
-    #         uuid: "{{ vm_spec.json.metadata.uuid }}"
-    #         spec_version: "{{ spec_version_int }}"
-            #spec_version: "{{ vm_spec.json.metadata.spec_version | int }}"
-          # spec: >-
-          #   {{
-          #     vm_spec.json.spec |
-          #     combine({
-          #       'resources': {
-          #         'memory_size_mib': requested_memory_mb | int
-          #       }
-          #     }, recursive=True)
-          #   }}
-
     - name: Build payload
       set_fact:
         vm_update_payload: >-
@@ -147,28 +119,6 @@
         body: "{{ vm_update_payload }}"
       register: memory_update
 
-    # - name: Update memory
-    #   uri:
-    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-    #     method: PUT
-    #     user: "{{ prism_username }}"
-    #     password: "{{ prism_password }}"
-    #     force_basic_auth: true
-    #     validate_certs: false
-    #     body_format: json
-    #     body: >-
-    #       {{
-    #         vm_spec.json |
-    #         combine({
-    #           'spec': {
-    #             'resources': {
-    #               'memory_size_mib': requested_memory_mb|int
-    #             }
-    #           }
-    #         }, recursive=True)
-    #       }}
-    #   register: memory_update
-
     - name: Wait for task completion
       pause:
         seconds: 30
@@ -192,9 +142,5 @@
           No changes in memory increase
           {% endif %}
 
-    # - name: Validate memory increase
-    #   assert:
-    #     that:
-    #       - verify_vm.json.spec.resources.memory_size_mib | int == requested_memory_mb | int
     #     success_msg: "Memory successfully increased"
     #     fail_msg: "Memory increase verification failed"
