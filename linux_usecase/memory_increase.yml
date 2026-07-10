@@ -79,33 +79,58 @@
         validate_certs: false
       register: vm_spec
 
-    - set_fact:
-        spec_version_int: "{{ vm_spec.json.metadata.spec_version | int }}"
+    # - set_fact:
+    #     spec_version_int: "{{ vm_spec.json.metadata.spec_version | int }}"
 
-    - debug:
-        var: spec_version_int
+    # - debug:
+    #     var: spec_version_int
     
-    - debug:
-        msg: "{{ spec_version_int | type_debug }}"
+    # - debug:
+    #     msg: "{{ spec_version_int | type_debug }}"
 
-    - name: Build update payload
-      set_fact:
-        vm_update_payload:
-          api_version: "{{ vm_spec.json.api_version }}"
-          metadata:
-            kind: "{{ vm_spec.json.metadata.kind }}"
-            uuid: "{{ vm_spec.json.metadata.uuid }}"
-            spec_version: "{{ spec_version_int }}"
+    # - name: Build update payload
+    #   set_fact:
+    #     vm_update_payload:
+    #       api_version: "{{ vm_spec.json.api_version }}"
+    #       metadata:
+    #         kind: "{{ vm_spec.json.metadata.kind }}"
+    #         uuid: "{{ vm_spec.json.metadata.uuid }}"
+    #         spec_version: "{{ spec_version_int }}"
             #spec_version: "{{ vm_spec.json.metadata.spec_version | int }}"
-          spec: >-
-            {{
-              vm_spec.json.spec |
-              combine({
-                'resources': {
-                  'memory_size_mib': requested_memory_mb | int
-                }
-              }, recursive=True)
-            }}
+          # spec: >-
+          #   {{
+          #     vm_spec.json.spec |
+          #     combine({
+          #       'resources': {
+          #         'memory_size_mib': requested_memory_mb | int
+          #       }
+          #     }, recursive=True)
+          #   }}
+
+    - name: Build payload
+      set_fact:
+        vm_update_payload: >-
+          {{
+            {
+              'api_version': vm_spec.json.api_version,
+              'metadata': {
+                'kind': 'vm',
+                'uuid': vm_uuid,
+                'spec_version': vm_spec.json.metadata.spec_version | int
+              },
+              'spec': (
+                vm_spec.json.spec |
+                combine(
+                  {
+                    'resources': {
+                      'memory_size_mib': requested_memory_mb | int
+                    }
+                  },
+                  recursive=True
+                )
+              )
+            }
+          }}
     
     - name: Update memory
       uri:
