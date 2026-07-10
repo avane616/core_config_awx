@@ -79,31 +79,31 @@
         validate_certs: false
       register: vm_spec
 
-# - name: Update memory
-#   uri:
-#     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-#     method: PUT
-#     user: "{{ prism_username }}"
-#     password: "{{ prism_password }}"
-#     force_basic_auth: true
-#     validate_certs: false
-#     body_format: json
-#     body: >-
-#       {{
-#         vm_spec.json |
-#         combine({
-#           'spec': {
-#             'resources': {
-#               'memory_size_mib': requested_memory_mb|int
-#             }
-#           }
-#         }, recursive=True)
-#       }}
-#   register: memory_update
+    - name: Update memory
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: PUT
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        body_format: json
+        body: >-
+          {{
+            vm_spec.json |
+            combine({
+              'spec': {
+                'resources': {
+                  'memory_size_mib': requested_memory_mb|int
+                }
+              }
+            }, recursive=True)
+          }}
+      register: memory_update
 
-# - name: Wait for task completion
-#   pause:
-#     seconds: 30
+    - name: Wait for task completion
+      pause:
+        seconds: 30
 
     - name: Verify updated memory
       uri:
