@@ -1,60 +1,82 @@
 ---
-- name: Validate input
-  assert:
-    that:
-      - vm_name | length > 0
-      - additional_memory_gb | int > 0
-    fail_msg: "VM name and requested memory increase are mandatory"
+- name: Get Nutanix VM details
+  hosts: localhost
+  gather_facts: false
 
-- name: Get VM information
-  uri:
-    url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
-    method: POST
-    user: "{{ prism_username }}"
-    password: "{{ prism_password }}"
-    force_basic_auth: true
-    validate_certs: false
-    body_format: json
-    body:
-      kind: vm
-      filter: "vm_name=={{ vm_name }}"
-  register: vm_info
+  vars:
+    prism_host: "10.45.203.90"
+    prism_user: "automation"
+    vm_name: "dnkgevseanst001"
+    additional_memory_gb: "2"
 
-- name: Verify VM found
-  fail:
-    msg: "VM {{ vm_name }} not found"
-  when: vm_info.json.entities | length == 0
+  tasks:
 
-- name: Capture VM details
-  set_fact:
-    vm_uuid: "{{ vm_info.json.entities[0].metadata.uuid }}"
-    current_memory_mb: "{{ vm_info.json.entities[0].spec.resources.memory_size_mib }}"
+    - name: Fetch VM details
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
+        method: POST
+        user: "{{ prism_user }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: false
+        body_format: json
+        headers:
+          Content-Type: "application/json"
+        body:
+          kind: vm
+          #filter: "vm_name=={{ vm_name }}"
+          filter: "vm_name=={{ vm_name | upper }},vm_name=={{ vm_name | lower }}"
+      register: vm_response
 
-- name: Calculate requested memory
-  set_fact:
-    additional_memory_mb: "{{ additional_memory_gb | int * 1024 }}"
-    requested_memory_mb: "{{ current_memory_mb | int + (additional_memory_gb | int * 1024) }}"
+    - name: Fail if VM not found
+      fail:
+        msg: "VM {{ vm_name }} not found"
+      when: vm_response.json.entities | length == 0
 
-- name: Verify memory increase is even number
-  fail:
-    msg: "Memory increase must be in even numbers (2,4,6,8...)"
-  when: additional_memory_gb | int is odd
+    - name: Save VM details
+      set_fact:
+        vm_details: "{{ vm_response.json.entities[0] }}"
 
-- name: Display current and requested memory
-  debug:
-    msg:
-      - "Current Memory : {{ (current_memory_mb|int/1024)|int }} GB"
-      - "Requested Memory : {{ (requested_memory_mb|int/1024)|int }} GB"
+    - name: Display VM details
+      debug:
+        msg:
+          - "VM Name: {{ vm_details.status.name }}"
+          - "UUID: {{ vm_details.metadata.uuid }}"
+          - "Power State: {{ vm_details.status.resources.power_state }}"
+          - "Memory (MiB): {{ vm_details.status.resources.memory_size_mib }}"
+          - "Sockets: {{ vm_details.status.resources.num_sockets }}"
+          - "vCPUs per Socket: {{ vm_details.status.resources.num_vcpus_per_socket }}"
 
-- name: Get complete VM specification
-  uri:
-    url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-    method: GET
-    user: "{{ prism_username }}"
-    password: "{{ prism_password }}"
-    force_basic_auth: true
-    validate_certs: false
-  register: vm_spec
+
+    
+    
+    - name: Calculate requested memory
+      set_fact:
+        additional_memory_mb: "{{ additional_memory_gb | int * 1024 }}"
+        current_memory_mb: "{{ vm_details.status.resources.memory_size_mib }}"
+        requested_memory_mb: "{{ current_memory_mb | int + (additional_memory_gb | int * 1024) }}"
+        vm_uuid: "{{ vm_details.metadata.uuid }}"
+
+    - name: Verify memory increase is even number
+      fail:
+        msg: "Memory increase must be in even numbers (2,4,6,8...)"
+      when: additional_memory_gb | int is odd
+
+    - name: Display current and requested memory
+      debug:
+        msg:
+          - "Current Memory : {{ (current_memory_mb|int/1024)|int }} GB"
+          - "Requested Memory : {{ (requested_memory_mb|int/1024)|int }} GB"
+
+    - name: Get complete VM specification
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+      register: vm_spec
 
 # - name: Update memory
 #   uri:
@@ -82,26 +104,26 @@
 #   pause:
 #     seconds: 30
 
-- name: Verify updated memory
-  uri:
-    url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-    method: GET
-    user: "{{ prism_username }}"
-    password: "{{ prism_password }}"
-    force_basic_auth: true
-    validate_certs: false
-  register: verify_vm
+    - name: Verify updated memory
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+      register: verify_vm
 
-- name: Validate memory increase
-  assert:
-    that:
-      - verify_vm.json.spec.resources.memory_size_mib | int == requested_memory_mb | int
-    success_msg: "Memory successfully increased"
-    fail_msg: "Memory increase verification failed"
-
-- name: Display Linux validation commands
-  debug:
-    msg:
-      - "Run: free -h"
-      #- "Run: cat /proc/meminfo"
-      #- "Validate application services"
+    - name: Validate memory increase
+      assert:
+        that:
+          - verify_vm.json.spec.resources.memory_size_mib | int == requested_memory_mb | int
+        success_msg: "Memory successfully increased"
+        fail_msg: "Memory increase verification failed"
+    
+    - name: Display Linux validation commands
+      debug:
+        msg:
+          - "Run: free -h"
+          #- "Run: cat /proc/meminfo"
+          #- "Validate application services"
