@@ -1,0 +1,143 @@
+- name: playbook using CyberArk PAS
+  hosts: localhost
+  gather_facts: false
+  # vars:
+  #   cyberark_url: "https://DNKGEITGCYWQ004.services.internal"
+  #   vault_safe: "WIN-VELUX-ALL-LMA-AD-Admin"
+  #   username: "testaccount"
+  tasks:
+  
+    # - name: Install cyberark.pas collection
+    #   shell: |
+    #     ansible-galaxy collection list community.general
+    #     ansible-galaxy collection install cyberark.pas
+    #   #changed_when: false
+    # - name: Create CyberArk user
+    #   cyberark.pas.cyberark_user:
+    #     username: testaccount
+    #     state: present
+    #     cyberark_session: "{{ cyberark_session }}"
+        
+    # - name: Retrieve credentials using Central Credential Provider
+    #   cyberark.pas.cyberark_credential:
+    #     api_base_url: "{{ cyberark_url }}"
+    #     app_id: "AIM-Test-Application"
+    #     validate_certs: false
+    #     reason: "requesting credential for Ansible deployment"
+    #     connection_timeout: 60
+    #     query: "Safe={{ vault_safe}};UserName={{ username }}"
+    #     query_format: "Exact"
+    #     fail_request_on_password_change: True
+    #   register: ca_cred
+    #   delegate_to: localhost
+      #no_log: true
+
+    # - name: Set ansible_password to remote node
+    #   ansible.builtin.set_fact:
+    #     ansible_user: "{{ ca_cred.result.UserName }}"
+    #     ansible_password: "{{ ca_cred.result.Content }}"
+    #   #no_log: true
+
+    # - name: Execute some command
+    #   ansible.builtin.shell: "hostname"
+    #   register: shell_output
+
+# ---
+# - name: Fetch credentials from CyberArk CCP
+#   hosts: localhost
+#   #gather_facts: false
+#   tasks:
+#     - name: Check runtime user
+#       shell: |
+#         whoami
+#         id
+#       register: user_info
+     
+#     - debug:
+#         var: user_info.stdout
+ 
+#     # - name: Fetch password from CyberArk CCP
+#       # ansible.builtin.uri:
+#       #   url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts"
+#       #   method: GET
+#       #   validate_certs: no
+#       #   headers:
+#       #     Content-Type: "application/json"
+#       #   return_content: yes
+#       #   status_code: 200
+#       #   body_format: form-urlencoded
+#       #   body:
+#       #     AppID: "AIMWebService"
+#       #     Safe: "WIN-VELUX-ALL-LMA-AD-Admin"
+#       #     Object: "testaccount"
+#       # register: cyberark_response
+      
+    - name: Get credential from CyberArk CCP
+      uri:
+        #url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=WIN-VELUX-ALL-LMA-AD-Admin&Object=awxiacnprd"
+        url: "https://DNKGEITGCYWQ004.services.internal/AIMWebService/api/Accounts?AppID=AIM-Test-Application&Safe=VELUXTEST-LINUX-IaC-NPRD-ACC&Object=awxiactest"
+        method: GET
+        timeout: 120
+        validate_certs: false
+        return_content: true
+      register: cyberark_response
+      ignore_errors: yes
+      #become_user: admin
+#       #no_log: true
+    - debug:
+        var: cyberark_response
+    - name: Set password securely
+      set_fact:
+        target_linux_user: "{{ cyberark_response.json.UserName }}"
+        
+      #no_log: true
+   
+    - debug:
+        var: target_linux_user
+
+    - name: Dynamically inject target host with CyberArk credentials
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: dynamic_cyberark_targets
+        ansible_user: "{{ target_linux_user }}"
+        ansible_password: "{{ cyberark_response.json.Content }}"
+        ansible_ssh_auth_method: password
+      no_log: true
+      loop: "{{ target_linux_ips }}"
+
+- name: Phase 2 - Execute Tasks on Target Linux Machine
+  hosts: dynamic_cyberark_targets
+  gather_facts: true
+  tasks:
+    - name: Verify successful connection
+      ansible.builtin.debug:
+         msg: "Successfully logged into {{ inventory_hostname }} as {{ ansible_user }}!"
+
+    - name: Run a sample remote command
+      ansible.builtin.command: uname -a
+      register: system_info
+
+    - name: Display system information
+      ansible.builtin.debug:
+        var: system_info.stdout
+
+#     # - name: Retrieve credentials from CyberArk CCP
+#     #   uri:
+#     #     url: "{{ ccp_url }}?AppID={{ app_id }}&Safe={{ safe }}&Object={{ object }}"
+#     #     method: GET
+#     #     validate_certs: false
+#     #     return_content: true
+#     #     headers:
+#     #       Content-Type: "application/json"
+#     #   register: cyberark_response
+#     #   #no_log: true
+
+#     # - name: Extract username and password
+#     #   set_fact:
+#     #     cyberark_username: "{{ cyberark_response.json.UserName }}"
+#     #     cyberark_password: "{{ cyberark_response.json.Content }}"
+#     #   #no_log: true
+
+#     # - name: Display username
+#     #   debug:
+#     #     msg: "Retrieved username: {{ cyberark_username }}"
