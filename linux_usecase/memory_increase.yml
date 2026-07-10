@@ -80,7 +80,7 @@
       register: vm_spec
 
     - set_fact:
-      spec_version_int: "{{ vm_spec.json.metadata.spec_version | int }}"
+        spec_version_int: "{{ vm_spec.json.metadata.spec_version | int }}"
 
     - debug:
         var: spec_version_int
