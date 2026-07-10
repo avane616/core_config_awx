@@ -1,0 +1,46 @@
+---
+- name: Get Nutanix VM details
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    prism_host: "10.45.203.90"
+    prism_user: "automation"
+    vm_name: "dnkgevseanst001"
+
+  tasks:
+
+    - name: Fetch VM details
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
+        method: POST
+        user: "{{ prism_user }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: false
+        body_format: json
+        headers:
+          Content-Type: "application/json"
+        body:
+          kind: vm
+          filter: "vm_name=={{ vm_name }}"
+      register: vm_response
+
+    - name: Fail if VM not found
+      fail:
+        msg: "VM {{ vm_name }} not found"
+      when: vm_response.json.entities | length == 0
+
+    - name: Save VM details
+      set_fact:
+        vm_details: "{{ vm_response.json.entities[0] }}"
+
+    - name: Display VM details
+      debug:
+        msg:
+          - "VM Name: {{ vm_details.status.name }}"
+          - "UUID: {{ vm_details.metadata.uuid }}"
+          - "Power State: {{ vm_details.status.resources.power_state }}"
+          - "Memory (MiB): {{ vm_details.status.resources.memory_size_mib }}"
+          - "Sockets: {{ vm_details.status.resources.num_sockets }}"
+          - "vCPUs per Socket: {{ vm_details.status.resources.num_vcpus_per_socket }}"
