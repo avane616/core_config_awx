@@ -5,7 +5,7 @@
 
   vars:
     prism_host: "10.45.203.90"
-    prism_user: "automation"
+    prism_username: "automation"
     vm_name: "dnkgevseanst001"
     additional_memory_gb: "2"
 
@@ -15,7 +15,7 @@
       uri:
         url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
         method: POST
-        user: "{{ prism_user }}"
+        user: "{{ prism_username }}"
         password: "{{ prism_password }}"
         force_basic_auth: yes
         validate_certs: false
@@ -43,7 +43,7 @@
           - "VM Name: {{ vm_details.status.name }}"
           - "UUID: {{ vm_details.metadata.uuid }}"
           - "Power State: {{ vm_details.status.resources.power_state }}"
-          - "Memory (MiB): {{ vm_details.status.resources.memory_size_mib }}"
+          - "Memory: {{ vm_details.status.resources.memory_size_mib }}"
           - "Sockets: {{ vm_details.status.resources.num_sockets }}"
           - "vCPUs per Socket: {{ vm_details.status.resources.num_vcpus_per_socket }}"
     
