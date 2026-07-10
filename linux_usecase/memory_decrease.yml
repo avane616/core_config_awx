@@ -1,0 +1,133 @@
+---
+- name: Decrease Nutanix VM Memory
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    prism_host: "10.45.203.90"
+    prism_username: "automation"
+    vm_name: "dnkgevseanst001"
+    memory_reduction_gb: "2"
+
+  tasks:
+
+    - name: Fetch VM details
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
+        method: POST
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: false
+        body_format: json
+        headers:
+          Content-Type: "application/json"
+        body:
+          kind: vm
+          filter: "vm_name=={{ vm_name | upper }},vm_name=={{ vm_name | lower }}"
+      register: vm_response
+
+    - name: Fail if VM not found
+      fail:
+        msg: "VM {{ vm_name }} not found"
+      when: vm_response.json.entities | length == 0
+
+    - name: Save VM details
+      set_fact:
+        vm_details: "{{ vm_response.json.entities[0] }}"
+
+    - name: Display VM details
+      debug:
+        msg:
+          - "VM Name: {{ vm_details.status.name }}"
+          - "UUID: {{ vm_details.metadata.uuid }}"
+          - "Power State: {{ vm_details.status.resources.power_state }}"
+          - "Memory: {{ vm_details.status.resources.memory_size_mib }}"
+          - "Sockets: {{ vm_details.status.resources.num_sockets }}"
+          - "vCPUs per Socket: {{ vm_details.status.resources.num_vcpus_per_socket }}"
+
+    - name: Capture VM details
+      set_fact:
+        current_memory_mb: "{{ vm_details.status.resources.memory_size_mib }}"
+        vm_uuid: "{{ vm_details.metadata.uuid }}"
+
+    - name: Verify memory reduction is even number
+      fail:
+        msg: "Memory reduction must be in even numbers (2,4,6,8...)"
+      when: memory_reduction_gb | int is odd
+
+    - name: Calculate requested memory
+      set_fact:
+        reduction_memory_mb: "{{ memory_reduction_gb | int * 1024 }}"
+        requested_memory_mb: "{{ current_memory_mb | int - (memory_reduction_gb | int * 1024) }}"
+
+    - name: Validate requested memory
+      fail:
+        msg: >-
+          Cannot reduce memory by {{ memory_reduction_gb }} GB.
+          Current memory is {{ (current_memory_mb|int/1024)|int }} GB.
+      when: requested_memory_mb | int <= 0
+
+    - name: Display current and requested memory
+      debug:
+        msg:
+          - "Current Memory : {{ (current_memory_mb|int/1024)|int }} GB"
+          - "Memory Reduction : {{ memory_reduction_gb }} GB"
+          - "Requested Memory : {{ (requested_memory_mb|int/1024)|int }} GB"
+
+    - name: Get complete VM specification
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+      register: vm_spec
+
+    # - name: Decrease memory
+    #   uri:
+    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+    #     method: PUT
+    #     user: "{{ prism_username }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: true
+    #     validate_certs: false
+    #     body_format: json
+    #     body: >-
+    #       {{
+    #         vm_spec.json |
+    #         combine({
+    #           'spec': {
+    #             'resources': {
+    #               'memory_size_mib': requested_memory_mb | int
+    #             }
+    #           }
+    #         }, recursive=True)
+    #       }}
+    #   register: memory_update
+
+    # - name: Wait for task completion
+    #   pause:
+    #     seconds: 30
+
+    - name: Verify updated memory
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+      register: verify_vm
+
+    - name: Check memory decrease status
+      debug:
+        msg: >-
+          {% if verify_vm.json.spec.resources.memory_size_mib | int == requested_memory_mb | int %}
+          Memory successfully decreased from
+          {{ (current_memory_mb | int / 1024) | int }} GB to
+          {{ (requested_memory_mb | int / 1024) | int }} GB
+          {% else %}
+          No changes in memory decrease
+          {% endif %}
