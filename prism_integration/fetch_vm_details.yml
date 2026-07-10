@@ -23,7 +23,8 @@
           Content-Type: "application/json"
         body:
           kind: vm
-          filter: "vm_name=={{ vm_name }}"
+          #filter: "vm_name=={{ vm_name }}"
+          filter: "vm_name=={{ vm_name | upper }},vm_name=={{ vm_name | lower }}"
       register: vm_response
 
     - name: Fail if VM not found
