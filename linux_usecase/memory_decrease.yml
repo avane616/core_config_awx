@@ -108,20 +108,20 @@
             }
           }}
 
-    # - name: Decrease memory
-    #   uri:
-    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-    #     method: PUT
-    #     user: "{{ prism_username }}"
-    #     password: "{{ prism_password }}"
-    #     force_basic_auth: true
-    #     validate_certs: false
-    #     body_format: json
-    #     status_code:
-    #       - 200
-    #       - 202
-    #     body: "{{ vm_update_payload }}"
-    #   register: memory_update
+    - name: Decrease memory
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: PUT
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        body_format: json
+        status_code:
+          - 200
+          - 202
+        body: "{{ vm_update_payload }}"
+      register: memory_update
 
     - name: Wait for task completion
       pause:
