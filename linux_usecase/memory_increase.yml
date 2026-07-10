@@ -46,17 +46,18 @@
           - "Memory (MiB): {{ vm_details.status.resources.memory_size_mib }}"
           - "Sockets: {{ vm_details.status.resources.num_sockets }}"
           - "vCPUs per Socket: {{ vm_details.status.resources.num_vcpus_per_socket }}"
-
-
     
+    - name: Capture Details
+      set_fact:
+        current_memory_mb: "{{ vm_details.status.resources.memory_size_mib }}"
+        vm_uuid: "{{ vm_details.metadata.uuid }}"
+
     
     - name: Calculate requested memory
       set_fact:
         additional_memory_mb: "{{ additional_memory_gb | int * 1024 }}"
-        current_memory_mb: "{{ vm_details.status.resources.memory_size_mib }}"
         requested_memory_mb: "{{ current_memory_mb | int + (additional_memory_gb | int * 1024) }}"
-        vm_uuid: "{{ vm_details.metadata.uuid }}"
-
+        
     - name: Verify memory increase is even number
       fail:
         msg: "Memory increase must be in even numbers (2,4,6,8...)"
