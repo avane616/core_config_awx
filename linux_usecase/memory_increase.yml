@@ -86,7 +86,7 @@
           metadata:
             kind: "{{ vm_spec.json.metadata.kind }}"
             uuid: "{{ vm_spec.json.metadata.uuid }}"
-            spec_version: "{{ vm_spec.json.metadata.spec_version | string | from_json }}"
+            spec_version: "{{ vm_spec.json.metadata.spec_version | int | to_json | from_json }}"
             #spec_version: "{{ vm_spec.json.metadata.spec_version | int }}"
           spec: >-
             {{
