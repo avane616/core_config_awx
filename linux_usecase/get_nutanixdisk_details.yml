@@ -90,7 +90,7 @@
 
     - name: Get parent disk from PV
       shell: |
-        lsblk -no PKNAME {{ pv_name }}
+        lsblk -no PKNAME {{ pv_name }} | head -1
       register: parent_disk
       changed_when: false
 
