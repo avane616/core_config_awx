@@ -147,6 +147,12 @@
       debug:
         msg: "Nutanix Disk UUID: {{ nutanix_disk_uuid | default('UUID not found') }}"
 
+  
+    - name: Get hostname
+      command: hostname -s
+      register: host_name
+      changed_when: false
+
     - name: Final Summary
       debug:
         msg:
@@ -158,3 +164,4 @@
           - "Disk Device       : {{ disk_device }}"
           - "Disk Serial       : {{ disk_serial }}"
           - "Nutanix Disk UUID : {{ nutanix_disk_uuid | default('Not Found') }}"
+          - "HostName          : {{ host_name.stdout }}"
