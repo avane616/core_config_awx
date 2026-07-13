@@ -12,10 +12,12 @@
       include_tasks: code_compute.yml
 
     # Fetch Credentials from CyberArk
-    - name: Fetch CyberArk credentials
-      include_role:
-        name: tools_integration
-        tasks_from: cyberark_integration.yml
+    - name: Run code compute tasks
+      include_tasks: cyberark.yml
+    # - name: Fetch CyberArk credentials
+    #   include_role:
+    #     name: tools_integration
+    #     tasks_from: cyberark_integration.yml
 
     - name: Dynamically inject target host with CyberArk credentials
       ansible.builtin.add_host:
