@@ -41,17 +41,17 @@
 
   vars:
     filesystem_mount: "/tmp"
-    prism_host: "dnkhovpcp001"
-    prism_user: "automation_poc"
+    prism_host: "10.45.203.90"
+    prism_user: "automation"
 
   tasks:
 
     - name: Get specific virtual disk
       uri:
-        url: "https://{{ prism_host }}:9440/PrismGateway/services/rest/v2.0/virtual_disks/04abcd34-2353-4f73-9096-76ab418558d2"
+        url: "https://{{ prism_user}}:{{ prism_password }}@{{ prism_host }}:9440/PrismGateway/services/rest/v2.0/virtual_disks/04abcd34-2353-4f73-9096-76ab418558d2"
         method: GET
-        user: "{{ prism_user }}"
-        password: "{{ prism_password }}"
+        # user: "{{ prism_user }}"
+        # password: "{{ prism_password }}"
         force_basic_auth: true
         validate_certs: false
         return_content: true
