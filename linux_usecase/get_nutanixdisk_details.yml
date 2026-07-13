@@ -130,9 +130,18 @@
       set_fact:
         nutanix_disk_uuid: >-
           {{
-            disk_serial
-            | regex_search('[0-9a-fA-F]{8}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{12}')
+            (disk_serial
+            | regex_search('[0-9a-fA-F]{8}_[0-9a-fA-F]{4}_[0-9a-fA-F]{4}_[0-9a-fA-F]{4}_[0-9a-fA-F]{12}'))
+            | replace('_', '-')
           }}
+
+    # - name: Extract Nutanix Disk UUID
+    #   set_fact:
+    #     nutanix_disk_uuid: >-
+    #       {{
+    #         disk_serial
+    #         | regex_search('[0-9a-fA-F]{8}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{12}')
+    #       }}
 
     - name: Display Nutanix Disk UUID
       debug:
