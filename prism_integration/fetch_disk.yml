@@ -1,0 +1,61 @@
+---
+- name: Prepare dynamic targets
+  hosts: localhost
+  gather_facts: yes
+
+  tasks:
+    - name: Include variables
+      include_vars:
+        file: vars.yml
+
+    - name: Run code compute tasks
+      include_tasks: code_compute.yml
+
+    # # Fetch Credentials from CyberArk
+    # - name: Run code compute tasks
+    #   include_tasks: cyberark.yml
+    - name: Fetch CyberArk credentials
+      include_role:
+        name: tools_integration
+        tasks_from: cyberark_integration.yml
+
+    - name: Dynamically inject target host with CyberArk credentials
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: dynamic_cyberark_targets
+        ansible_user: "{{ target_linux_user }}"
+        ansible_password: "{{ target_linux_password }}"
+        ansible_ssh_auth_method: password       
+        # Privilege Escalation
+        ansible_become: true
+        ansible_become_method: sudo
+        ansible_become_user: root
+        ansible_become_password: "{{ target_linux_password }}"
+      #no_log: true
+      loop: "{{ target_linux_ips }}"
+
+- name: Phase 2 - Execute Tasks on Target Linux Machine
+  hosts: dynamic_cyberark_targets
+  gather_facts: true
+  become: true
+
+  vars:
+    filesystem_mount: "/tmp"
+    prism_host: "dnkhovpcp001"
+    prism_user: "automation_poc"
+
+  tasks:
+
+    - name: Get specific virtual disk
+      uri:
+        url: "https://{{ prism_host }}:9440/PrismGateway/services/rest/v2.0/virtual_disks/04abcd34-2353-4f73-9096-76ab418558d2"
+        method: GET
+        user: "{{ prism_user }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        return_content: true
+      register: disk_info
+    
+    - debug:
+        msg: "{{ disk_info.json | to_nice_json }}"
