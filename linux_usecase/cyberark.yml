@@ -1,0 +1,20 @@
+- name: Get credential from CyberArk CCP
+  uri:
+    url: "https://{{ cyberark_host }}/AIMWebService/api/Accounts?AppID={{ app_id }}&Safe={{ safe }}&Object={{ object }}"
+    method: GET
+    return_content: true
+    validate_certs: false
+    timeout: 120
+    status_code: 200
+  register: cyberark_response
+  no_log: true
+
+- name: Set username and password from CyberArk
+  set_fact:
+    target_linux_user: "{{ cyberark_response.json.UserName }}"
+    target_linux_password: "{{ cyberark_response.json.Content }}"
+  no_log: true
+
+- name: Display retrieved username
+  debug:
+    msg: "Retrieved username: {{ target_linux_user }}"
