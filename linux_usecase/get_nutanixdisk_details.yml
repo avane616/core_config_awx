@@ -11,9 +11,9 @@
     - name: Run code compute tasks
       include_tasks: code_compute.yml
 
-    # Fetch Credentials from CyberArk
-    - name: Run code compute tasks
-      include_tasks: cyberark.yml
+    # # Fetch Credentials from CyberArk
+    # - name: Run code compute tasks
+    #   include_tasks: cyberark.yml
     # - name: Fetch CyberArk credentials
     #   include_role:
     #     name: tools_integration
