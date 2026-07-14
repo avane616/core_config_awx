@@ -19,28 +19,19 @@
     #     name: tools_integration
     #     tasks_from: cyberark_integration.yml
 
-    - name: Get VM disk details
-      shell: |
-        source /etc/profile
-        acli vm.get {{ vm_name }} include_vmdisk_paths=true
-      register: vm_disk_info
-    
-    - name: Show output
-      debug:
-        var: vm_disk_info.stdout_lines
-
     - name: Dynamically inject target host with CyberArk credentials
       ansible.builtin.add_host:
         name: "{{ item }}"
         groups: dynamic_cyberark_targets
-        ansible_user: "{{ target_linux_user }}"
-        ansible_password: "{{ target_linux_password }}"
+        #ansible_user: "{{ target_linux_user }}"
+        ansible_user: "automation"
+        ansible_password: "{{ prism_password }}"
         ansible_ssh_auth_method: password       
         # Privilege Escalation
         ansible_become: true
         ansible_become_method: sudo
         ansible_become_user: root
-        ansible_become_password: "{{ target_linux_password }}"
+        ansible_become_password: "{{ prism_password }}"
       #no_log: true
       loop: "{{ target_linux_ips }}"
 
@@ -55,17 +46,26 @@
     prism_user: "automation"
 
   tasks:
-
-    - name: Get specific virtual disk
-      uri:
-        url: "https://{{ prism_user}}:{{ prism_password }}@{{ prism_host }}:9440/PrismGateway/services/rest/v2.0/virtual_disks/04abcd34-2353-4f73-9096-76ab418558d2"
-        method: GET
-        # user: "{{ prism_user }}"
-        # password: "{{ prism_password }}"
-        force_basic_auth: true
-        validate_certs: false
-        return_content: true
-      register: disk_info
+    - name: Get VM disk details
+      shell: |
+        source /etc/profile
+        acli vm.get {{ vm_name }} include_vmdisk_paths=true
+      register: vm_disk_info
     
-    - debug:
-        msg: "{{ disk_info.json | to_nice_json }}"
+    - name: Show output
+      debug:
+        var: vm_disk_info.stdout_lines
+        
+    # - name: Get specific virtual disk
+    #   uri:
+    #     url: "https://{{ prism_user}}:{{ prism_password }}@{{ prism_host }}:9440/PrismGateway/services/rest/v2.0/virtual_disks/04abcd34-2353-4f73-9096-76ab418558d2"
+    #     method: GET
+    #     # user: "{{ prism_user }}"
+    #     # password: "{{ prism_password }}"
+    #     force_basic_auth: true
+    #     validate_certs: false
+    #     return_content: true
+    #   register: disk_info
+    
+    # - debug:
+    #     msg: "{{ disk_info.json | to_nice_json }}"
