@@ -52,7 +52,7 @@
       uri:
         url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
         method: POST
-        user: "{{ prism_password }}"
+        user: "{{ prism_user }}"
         password: "{{ prism_password }}"
         validate_certs: false
         force_basic_auth: yes
