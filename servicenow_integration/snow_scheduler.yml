@@ -4,13 +4,19 @@
   vars: 
     servicenow_instance: "https://hcltechdemosls4.service-now.com"
     assignment_group: "Nutanix%20Automation%20group"
-    catalog_item_name: "FileSystem%20Extension"
+    #catalog_item_name: "FileSystem%20Extension"
+    catalog_item_names:
+      - FileSystem Extension
+      - Memory Increase
+      - CPU Increase
+
   tasks:
 
     - name: Get open RITMs for the catalog item
       uri:
         #url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^stateIN1,2&sysparm_fields=sys_id,number,variables"
-        url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^cat_item.name={{ catalog_item_name }}^stateIN1,2&sysparm_fields=sys_id,number,variables"
+        #url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^cat_item.name={{ catalog_item_name }}^stateIN1,2&sysparm_fields=sys_id,number,variables"
+        url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^cat_item.nameIN{{ catalog_item_names | join(',') }}^stateIN1,2&sysparm_fields=sys_id,number,variables
         method: GET
         user: "{{ lookup('env', 'user') }}"
         password: "{{ lookup('env', 'password') }}"
