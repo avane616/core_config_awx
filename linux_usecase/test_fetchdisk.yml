@@ -19,6 +19,16 @@
     #     name: tools_integration
     #     tasks_from: cyberark_integration.yml
 
+    - name: Get VM disk details
+      shell: |
+        source /etc/profile
+        acli vm.get {{ vm_name }} include_vmdisk_paths=true
+      register: vm_disk_info
+    
+    - name: Show output
+      debug:
+        var: vm_disk_info.stdout_lines
+
     - name: Dynamically inject target host with CyberArk credentials
       ansible.builtin.add_host:
         name: "{{ item }}"
