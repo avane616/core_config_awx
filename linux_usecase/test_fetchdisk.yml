@@ -37,8 +37,8 @@
 
 - name: Phase 2 - Execute Tasks on Target Linux Machine
   hosts: dynamic_cyberark_targets
-  gather_facts: true
-  become: true
+  gather_facts: false
+ # become: true
 
   vars:
     filesystem_mount: "/tmp"
