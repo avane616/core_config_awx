@@ -44,7 +44,8 @@
     filesystem_mount: "/tmp"
     prism_host: "10.45.203.90"
     prism_user: "automation"
-
+    vm_name: "DNKGEVSEANST001"
+    
   tasks:
     - name: Get VM disk details
       shell: |
