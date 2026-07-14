@@ -5,3 +5,4 @@ sparse_checkout:
   - linux_filesystem_extension
 Release_version: "test"
 filesystem_name: "/app"
+vm_name: "DNKGEVSEANST001"
