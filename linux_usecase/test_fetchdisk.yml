@@ -23,39 +23,67 @@
       ansible.builtin.add_host:
         name: "{{ item }}"
         groups: dynamic_cyberark_targets
-        #ansible_user: "{{ target_linux_user }}"
-        ansible_user: "automation"
-        ansible_password: "{{ prism_password }}"
+        ansible_user: "{{ target_linux_user }}"
+        #ansible_user: "automation"
+        ansible_password: "{{ target_linux_password }}"
         ansible_ssh_auth_method: password       
         # Privilege Escalation
         ansible_become: true
         ansible_become_method: sudo
         ansible_become_user: root
-        ansible_become_password: "{{ prism_password }}"
+        ansible_become_password: "{{ target_linux_password }}"
       #no_log: true
       loop: "{{ target_linux_ips }}"
 
 - name: Phase 2 - Execute Tasks on Target Linux Machine
   hosts: dynamic_cyberark_targets
-  gather_facts: false
- # become: true
+  gather_facts: true
+  become: true
 
   vars:
     filesystem_mount: "/tmp"
-    prism_host: "10.45.203.90"
-    prism_user: "automation"
-    vm_name: "DNKGEVSEANST001"
+    prism_host: "dnkhovpcp001"
+    prism_user: "automation_poc"
+    vm_name: "DNKGEVSEAPPT003"
     
   tasks:
-    - name: Get VM disk details
-      shell: |
-        source /etc/profile
-        acli vm.get {{ vm_name }} include_vmdisk_paths=true
-      register: vm_disk_info
-    
-    - name: Show output
+ 
+    - name: Query VM
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
+        method: POST
+        user: "{{ prism_password }}"
+        password: "{{ prism_password }}"
+        validate_certs: false
+        force_basic_auth: yes
+        body_format: json
+        body:
+          kind: vm
+      register: vm_list
+ 
+    - name: Find specific VM
+      set_fact:
+        target_vm: "{{ item }}"
+      loop: "{{ vm_list.json.entities }}"
+      when: item.spec.name == vm_name
+ 
+    - name: Show VM details
       debug:
-        var: vm_disk_info.stdout_lines
+        msg:
+          - "VM Name : {{ target_vm.spec.name }}"
+          - "VM UUID : {{ target_vm.metadata.uuid }}"
+          - "Memory   : {{ target_vm.spec.resources.memory_size_mib }} MB"
+          - "vCPUs    : {{ target_vm.spec.resources.num_vcpus }}"
+ 
+    # - name: Get VM disk details
+    #   shell: |
+    #     source /etc/profile
+    #     acli vm.get {{ vm_name }} include_vmdisk_paths=true
+    #   register: vm_disk_info
+    
+    # - name: Show output
+    #   debug:
+    #     var: vm_disk_info.stdout_lines
         
     # - name: Get specific virtual disk
     #   uri:
