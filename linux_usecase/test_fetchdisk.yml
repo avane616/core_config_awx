@@ -73,7 +73,7 @@
           - "VM Name : {{ target_vm.spec.name }}"
           - "VM UUID : {{ target_vm.metadata.uuid }}"
           - "Memory   : {{ target_vm.spec.resources.memory_size_mib }} MB"
-          - "vCPUs    : {{ target_vm.spec.resources.num_vcpus }}"
+          #- "vCPUs    : {{ target_vm.spec.resources.num_vcpus }}"
  
     # - name: Get VM disk details
     #   shell: |
