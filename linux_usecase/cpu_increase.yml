@@ -8,7 +8,7 @@
     prism_username: "automation"
     vm_name: "dnkgevseanst001"
     #additional_memory_gb: "2"
-    additional_cpu: "1"
+    additional_cpu: "2"
 
   tasks:
 
