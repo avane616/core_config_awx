@@ -43,8 +43,8 @@
           - "VM Name: {{ vm_details.status.name }}"
           - "UUID: {{ vm_details.metadata.uuid }}"
           - "Power State: {{ vm_details.status.resources.power_state }}"
-          - "Sockets: {{ vm_details.status.resources.num_sockets }}"
-          - "vCPUs per Socket: {{ vm_details.status.resources.num_vcpus_per_socket }}"
+          - "CPUs (Sockets): {{ vm_details.status.resources.num_sockets }}"
+          - "Cores Per CPU: {{ vm_details.status.resources.num_vcpus_per_socket }}"
 
     - name: Capture CPU details
       set_fact:
@@ -53,21 +53,41 @@
         current_total_vcpus: "{{ (vm_details.status.resources.num_sockets | int) * (vm_details.status.resources.num_vcpus_per_socket | int) }}"
         vm_uuid: "{{ vm_details.metadata.uuid }}"
 
-    - name: Calculate requested CPU
-      set_fact:
-        requested_total_vcpus: "{{ current_total_vcpus | int + additional_cpu | int }}"
-
     - name: Validate requested CPU increase
       fail:
-        msg: "CPU increase should be greater than 0"
+        msg: "CPU increase value must be greater than 0"
       when: additional_cpu | int <= 0
 
-    - name: Display current and requested CPU
+    - name: Validate even CPU increase for single CPU VM
+      fail:
+        msg: "For VMs with 1 CPU, requested vCPU increase must be an even number."
+      when:
+        - current_sockets == 1
+        - (additional_cpu | int) % 2 != 0
+
+    - name: Calculate requested CPU values
+      set_fact:
+        requested_total_vcpus: "{{ current_total_vcpus + (additional_cpu | int) }}"
+        requested_vcpus_per_socket: "{{ (current_total_vcpus + (additional_cpu | int)) // current_sockets }}"
+
+    - name: Validate CPU distribution across CPUs
+      fail:
+        msg: >-
+          Requested CPU increase cannot be evenly distributed across existing CPUs.
+          Current CPUs={{ current_sockets }},
+          Requested Total vCPU={{ requested_total_vcpus }}
+      when:
+        - (requested_total_vcpus | int) % (current_sockets | int) != 0
+
+    - name: Display CPU calculation
       debug:
         msg:
-          - "Current CPU : {{ current_total_vcpus }} vCPU"
-          - "CPU To Add : {{ additional_cpu }} vCPU"
-          - "Requested CPU : {{ requested_total_vcpus }} vCPU"
+          - "Current CPUs (Sockets)      : {{ current_sockets }}"
+          - "Current Cores Per CPU       : {{ current_vcpus_per_socket }}"
+          - "Current Total vCPU          : {{ current_total_vcpus }}"
+          - "Additional vCPU Requested   : {{ additional_cpu }}"
+          - "New Cores Per CPU           : {{ requested_vcpus_per_socket }}"
+          - "New Total vCPU             : {{ requested_total_vcpus }}"
 
     - name: Get complete VM specification
       uri:
@@ -79,7 +99,7 @@
         validate_certs: false
       register: vm_spec
 
-    - name: Build payload
+    - name: Build CPU update payload
       set_fact:
         vm_update_payload: >-
           {{
@@ -95,8 +115,8 @@
                 combine(
                   {
                     'resources': {
-                      'num_sockets': requested_total_vcpus | int,
-                      'num_vcpus_per_socket': 1
+                      'num_sockets': current_sockets,
+                      'num_vcpus_per_socket': requested_vcpus_per_socket | int
                     }
                   },
                   recursive=True
@@ -144,21 +164,24 @@
 
     - name: Capture updated CPU details
       set_fact:
-        final_vcpus: >-
-          {{
-            (verify_vm.json.spec.resources.num_sockets | int) *
-            (verify_vm.json.spec.resources.num_vcpus_per_socket | int)
-          }}
+        final_sockets: "{{ verify_vm.json.spec.resources.num_sockets | int }}"
+        final_vcpus_per_socket: "{{ verify_vm.json.spec.resources.num_vcpus_per_socket | int }}"
+        final_total_vcpus: "{{ (verify_vm.json.spec.resources.num_sockets | int) * (verify_vm.json.spec.resources.num_vcpus_per_socket | int) }}"
 
     - name: Check CPU increase status
       debug:
         msg: >-
-          {% if final_vcpus | int == requested_total_vcpus | int %}
-          CPU successfully increased from
-          {{ current_total_vcpus }} vCPU to
-          {{ final_vcpus }} vCPU.
+          {% if final_total_vcpus == requested_total_vcpus | int %}
+          CPU successfully increased.
+          Previous Configuration:
+          {{ current_sockets }} CPU(s) x {{ current_vcpus_per_socket }} Core(s)
+          = {{ current_total_vcpus }} vCPU
+
+          Updated Configuration:
+          {{ final_sockets }} CPU(s) x {{ final_vcpus_per_socket }} Core(s)
+          = {{ final_total_vcpus }} vCPU
           {% else %}
           CPU increase verification failed.
-          Current CPU detected:
-          {{ final_vcpus }} vCPU.
+          Expected={{ requested_total_vcpus }}
+          Actual={{ final_total_vcpus }}
           {% endif %}
