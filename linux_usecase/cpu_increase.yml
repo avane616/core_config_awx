@@ -50,7 +50,7 @@
       set_fact:
         current_sockets: "{{ vm_details.status.resources.num_sockets | int }}"
         current_vcpus_per_socket: "{{ vm_details.status.resources.num_vcpus_per_socket | int }}"
-        current_total_vcpus: "{{ (vm_details.status.resources.num_sockets | int) * (vm_details.status.resources.num_vcpus_per_socket | int) }}"
+        current_total_vcpus: "{{ (vm_details.status.resources.num_sockets | int) * (vm_details.status.resources.num_vcpus_per_socket | int) | int }}"
         vm_uuid: "{{ vm_details.metadata.uuid }}"
 
     - name: Validate requested CPU increase
@@ -67,9 +67,9 @@
 
     - name: Calculate requested CPU values
       set_fact:
-        requested_total_vcpus: "{{ current_total_vcpus + (additional_cpu | int) }}"
-        requested_vcpus_per_socket: "{{ (current_total_vcpus + (additional_cpu | int)) // current_sockets }}"
-
+        requested_total_vcpus: "{{ (current_total_vcpus | int) + (additional_cpu | int) }}"
+        requested_vcpus_per_socket: "{{ ((current_total_vcpus | int) + (additional_cpu | int)) // (current_sockets | int) }}"
+        
     - name: Validate CPU distribution across CPUs
       fail:
         msg: >-
