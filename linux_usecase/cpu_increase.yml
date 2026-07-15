@@ -115,7 +115,7 @@
                 combine(
                   {
                     'resources': {
-                      'num_sockets': current_sockets,
+                      'num_sockets': current_sockets | int,
                       'num_vcpus_per_socket': requested_vcpus_per_socket | int
                     }
                   },
