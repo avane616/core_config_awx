@@ -8,7 +8,7 @@
     prism_username: "automation"
     vm_name: "dnkgevseanst001"
     #additional_memory_gb: "2"
-    additional_cpu: "2"
+    additional_cpu: "1"
 
   tasks:
 
@@ -69,7 +69,7 @@
       set_fact:
         requested_total_vcpus: "{{ (current_total_vcpus | int) + (additional_cpu | int) }}"
         requested_vcpus_per_socket: "{{ ((current_total_vcpus | int) + (additional_cpu | int)) // (current_sockets | int) }}"
-        
+
     - name: Validate CPU distribution across CPUs
       fail:
         msg: >-
@@ -129,28 +129,28 @@
       debug:
         var: vm_update_payload
 
-    # - name: Update CPU
-    #   uri:
-    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-    #     method: PUT
-    #     user: "{{ prism_username }}"
-    #     password: "{{ prism_password }}"
-    #     force_basic_auth: true
-    #     validate_certs: false
-    #     body_format: json
-    #     status_code:
-    #       - 200
-    #       - 202
-    #     body: "{{ vm_update_payload }}"
-    #   register: cpu_update
+    - name: Update CPU
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: PUT
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        body_format: json
+        status_code:
+          - 200
+          - 202
+        body: "{{ vm_update_payload }}"
+      register: cpu_update
 
-    # - name: Display update response
-    #   debug:
-    #     var: cpu_update.json
+    - name: Display update response
+      debug:
+        var: cpu_update.json
 
-    # - name: Wait for task completion
-    #   pause:
-    #     seconds: 30
+    - name: Wait for task completion
+      pause:
+        seconds: 30
 
     - name: Verify updated CPU
       uri:
