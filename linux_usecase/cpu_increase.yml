@@ -52,6 +52,7 @@
         current_vcpus_per_socket: "{{ vm_details.status.resources.num_vcpus_per_socket | int }}"
         current_total_vcpus: "{{ (vm_details.status.resources.num_sockets | int) * (vm_details.status.resources.num_vcpus_per_socket | int) | int }}"
         vm_uuid: "{{ vm_details.metadata.uuid }}"
+        power_state: "{{ vm_details.status.resources.power_state }}"
 
     - name: Validate requested CPU increase
       fail:
