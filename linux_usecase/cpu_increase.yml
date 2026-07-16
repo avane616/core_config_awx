@@ -113,14 +113,14 @@
               'metadata': {
                 'kind': 'vm',
                 'uuid': vm_uuid,
-                'spec_version': vm_response.json.entities[0].metadata.spec_version | int
+                'spec_version': vm_response.json.metadata.spec_version | int
               },
               'spec': (
-                vm_response.json.entities[0].spec |
+                vm_response.json.spec |
                 combine(
                   {
                     'resources': (
-                      vm_response.json.entities[0].spec.resources |
+                      vm_response.json.spec.resources |
                       combine(
                         {
                           'power_state': 'OFF'
@@ -256,7 +256,7 @@
               'metadata': {
                 'kind': 'vm',
                 'uuid': vm_uuid,
-                'spec_version': vm_after_cpu_update.json.metadata.spec_version | int
+                'spec_version': vm_after_cpu_update.json.spec_version | int
               },
               'spec': (
                 vm_after_cpu_update.json.spec |
