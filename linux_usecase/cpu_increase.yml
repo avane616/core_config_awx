@@ -48,7 +48,7 @@
 
     - name: Capture CPU details
       set_fact:
-        current_spec: "{{ vm_details.spec | int }}"
+        current_spec: "{{ vm_details.metadata.spec_version | int }}"
         current_sockets: "{{ vm_details.status.resources.num_sockets | int }}"
         current_vcpus_per_socket: "{{ vm_details.status.resources.num_vcpus_per_socket | int }}"
         current_total_vcpus: "{{ (vm_details.status.resources.num_sockets | int) * (vm_details.status.resources.num_vcpus_per_socket | int) | int }}"
