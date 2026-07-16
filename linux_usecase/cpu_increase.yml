@@ -12,84 +12,84 @@
 
   tasks:
 
-    # - name: Fetch VM details
-    #   uri:
-    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
-    #     method: POST
-    #     user: "{{ prism_username }}"
-    #     password: "{{ prism_password }}"
-    #     force_basic_auth: yes
-    #     validate_certs: false
-    #     body_format: json
-    #     headers:
-    #       Content-Type: "application/json"
-    #     body:
-    #       kind: vm
-    #       filter: "vm_name=={{ vm_name | upper }},vm_name=={{ vm_name | lower }}"
-    #   register: vm_response
+    - name: Fetch VM details
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
+        method: POST
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: false
+        body_format: json
+        headers:
+          Content-Type: "application/json"
+        body:
+          kind: vm
+          filter: "vm_name=={{ vm_name | upper }},vm_name=={{ vm_name | lower }}"
+      register: vm_response
 
-    # - name: Fail if VM not found
-    #   fail:
-    #     msg: "VM {{ vm_name }} not found"
-    #   when: vm_response.json.entities | length == 0
+    - name: Fail if VM not found
+      fail:
+        msg: "VM {{ vm_name }} not found"
+      when: vm_response.json.entities | length == 0
 
-    # - name: Save VM details
-    #   set_fact:
-    #     vm_details: "{{ vm_response.json.entities[0] }}"
+    - name: Save VM details
+      set_fact:
+        vm_details: "{{ vm_response.json.entities[0] }}"
 
-    # - name: Display VM details
-    #   debug:
-    #     msg:
-    #       - "VM Name: {{ vm_details.status.name }}"
-    #       - "UUID: {{ vm_details.metadata.uuid }}"
-    #       - "Power State: {{ vm_details.status.resources.power_state }}"
-    #       - "CPUs (Sockets): {{ vm_details.status.resources.num_sockets }}"
-    #       - "Cores Per CPU: {{ vm_details.status.resources.num_vcpus_per_socket }}"
+    - name: Display VM details
+      debug:
+        msg:
+          - "VM Name: {{ vm_details.status.name }}"
+          - "UUID: {{ vm_details.metadata.uuid }}"
+          - "Power State: {{ vm_details.status.resources.power_state }}"
+          - "CPUs (Sockets): {{ vm_details.status.resources.num_sockets }}"
+          - "Cores Per CPU: {{ vm_details.status.resources.num_vcpus_per_socket }}"
 
-    # - name: Capture CPU details
-    #   set_fact:
-    #     current_spec: "{{ vm_details.metadata.spec_version | int }}"
-    #     current_sockets: "{{ vm_details.status.resources.num_sockets | int }}"
-    #     current_vcpus_per_socket: "{{ vm_details.status.resources.num_vcpus_per_socket | int }}"
-    #     current_total_vcpus: "{{ (vm_details.status.resources.num_sockets | int) * (vm_details.status.resources.num_vcpus_per_socket | int) | int }}"
-    #     vm_uuid: "{{ vm_details.metadata.uuid }}"
-    #     current_power_state: "{{ vm_details.status.resources.power_state }}"
+    - name: Capture CPU details
+      set_fact:
+        current_spec: "{{ vm_details.metadata.spec_version | int }}"
+        current_sockets: "{{ vm_details.status.resources.num_sockets | int }}"
+        current_vcpus_per_socket: "{{ vm_details.status.resources.num_vcpus_per_socket | int }}"
+        current_total_vcpus: "{{ (vm_details.status.resources.num_sockets | int) * (vm_details.status.resources.num_vcpus_per_socket | int) | int }}"
+        vm_uuid: "{{ vm_details.metadata.uuid }}"
+        current_power_state: "{{ vm_details.status.resources.power_state }}"
 
-    # - name: Validate requested CPU increase
-    #   fail:
-    #     msg: "CPU increase value must be greater than 0"
-    #   when: additional_cpu | int <= 0
+    - name: Validate requested CPU increase
+      fail:
+        msg: "CPU increase value must be greater than 0"
+      when: additional_cpu | int <= 0
 
-    # - name: Validate even CPU increase for single CPU VM
-    #   fail:
-    #     msg: "For VMs with 1 CPU, requested vCPU increase must be an even number."
-    #   when:
-    #     - current_sockets == 1
-    #     - (additional_cpu | int) % 2 != 0
+    - name: Validate even CPU increase for single CPU VM
+      fail:
+        msg: "For VMs with 1 CPU, requested vCPU increase must be an even number."
+      when:
+        - current_sockets == 1
+        - (additional_cpu | int) % 2 != 0
 
-    # - name: Calculate requested CPU values
-    #   set_fact:
-    #     requested_total_vcpus: "{{ (current_total_vcpus | int) + (additional_cpu | int) }}"
-    #     requested_vcpus_per_socket: "{{ ((current_total_vcpus | int) + (additional_cpu | int)) // (current_sockets | int) }}"
+    - name: Calculate requested CPU values
+      set_fact:
+        requested_total_vcpus: "{{ (current_total_vcpus | int) + (additional_cpu | int) }}"
+        requested_vcpus_per_socket: "{{ ((current_total_vcpus | int) + (additional_cpu | int)) // (current_sockets | int) }}"
 
-    # - name: Validate CPU distribution across CPUs
-    #   fail:
-    #     msg: >-
-    #       Requested CPU increase cannot be evenly distributed across existing CPUs.
-    #       Current CPUs={{ current_sockets }},
-    #       Requested Total vCPU={{ requested_total_vcpus }}
-    #   when:
-    #     - (requested_total_vcpus | int) % (current_sockets | int) != 0
+    - name: Validate CPU distribution across CPUs
+      fail:
+        msg: >-
+          Requested CPU increase cannot be evenly distributed across existing CPUs.
+          Current CPUs={{ current_sockets }},
+          Requested Total vCPU={{ requested_total_vcpus }}
+      when:
+        - (requested_total_vcpus | int) % (current_sockets | int) != 0
 
-    # - name: Display CPU calculation
-    #   debug:
-    #     msg:
-    #       - "Current CPUs (Sockets)      : {{ current_sockets }}"
-    #       - "Current Cores Per CPU       : {{ current_vcpus_per_socket }}"
-    #       - "Current Total vCPU          : {{ current_total_vcpus }}"
-    #       - "Additional vCPU Requested   : {{ additional_cpu }}"
-    #       - "New Cores Per CPU           : {{ requested_vcpus_per_socket }}"
-    #       - "New Total vCPU             : {{ requested_total_vcpus }}"
+    - name: Display CPU calculation
+      debug:
+        msg:
+          - "Current CPUs (Sockets)      : {{ current_sockets }}"
+          - "Current Cores Per CPU       : {{ current_vcpus_per_socket }}"
+          - "Current Total vCPU          : {{ current_total_vcpus }}"
+          - "Additional vCPU Requested   : {{ additional_cpu }}"
+          - "New Cores Per CPU           : {{ requested_vcpus_per_socket }}"
+          - "New Total vCPU             : {{ requested_total_vcpus }}"
 
     
     # ####################################################################
