@@ -95,24 +95,43 @@
     ####################################################################
     # Power OFF VM
     ####################################################################
-
-    - name: Build Power Off Spec
+    - name: Get complete VM specification
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+      register: vm_response 
+    - name: Prepare Power Off Payload
       set_fact:
-        poweroff_spec: >-
+        poweroff_payload: >-
           {{
-            current_spec |
-            combine(
-              {
-                'resources':
-                  current_spec.resources |
-                  combine(
-                    {
-                      'power_state': 'OFF'
-                    }
-                  )
+            {
+              'api_version': vm_response.json.api_version,
+              'metadata': {
+                'kind': 'vm',
+                'uuid': vm_uuid,
+                'spec_version': vm_response.json.entities[0].metadata.spec_version | int
               },
-              recursive=True
-            )
+              'spec': (
+                vm_response.json.entities[0].spec |
+                combine(
+                  {
+                    'resources': (
+                      vm_response.json.entities[0].spec.resources |
+                      combine(
+                        {
+                          'power_state': 'OFF'
+                        }
+                      )
+                    )
+                  },
+                  recursive=True
+                )
+              )
+            }
           }}
 
     - name: Power Off VM
@@ -228,24 +247,36 @@
     # Power ON VM
     ####################################################################
 
-    - name: Build Power On Spec
+    - name: Prepare Power On Payload
       set_fact:
-        poweron_spec: >-
+        poweron_payload: >-
           {{
-            vm_after_cpu_update.json.spec |
-            combine(
-              {
-                'resources':
-                  vm_after_cpu_update.json.spec.resources |
-                  combine(
-                    {
-                      'power_state': 'ON'
-                    }
-                  )
+            {
+              'api_version': vm_after_cpu_update.json.api_version,
+              'metadata': {
+                'kind': 'vm',
+                'uuid': vm_uuid,
+                'spec_version': vm_after_cpu_update.json.metadata.spec_version | int
               },
-              recursive=True
-            )
+              'spec': (
+                vm_after_cpu_update.json.spec |
+                combine(
+                  {
+                    'resources': (
+                      vm_after_cpu_update.json.spec.resources |
+                      combine(
+                        {
+                          'power_state': 'ON'
+                        }
+                      )
+                    )
+                  },
+                  recursive=True
+                )
+              )
+            }
           }}
+
 
     - name: Power On VM
       uri:
