@@ -289,7 +289,7 @@
           - 200
           - 202
         body: "{{ poweroff_payload }}"
-      when: current_power_state == "ON"
+      #when: current_power_state == "ON"
 
     - name: Wait for VM ON
       uri:
@@ -303,7 +303,7 @@
       until: vm_on_status.json.status.resources.power_state == "ON"
       retries: 20
       delay: 15
-      when: current_power_state == "ON"
+      #when: current_power_state == "ON"
 
     # - name: Verify updated CPU
     #   uri:
