@@ -52,7 +52,7 @@
         current_vcpus_per_socket: "{{ vm_details.status.resources.num_vcpus_per_socket | int }}"
         current_total_vcpus: "{{ (vm_details.status.resources.num_sockets | int) * (vm_details.status.resources.num_vcpus_per_socket | int) | int }}"
         vm_uuid: "{{ vm_details.metadata.uuid }}"
-        power_state: "{{ vm_details.status.resources.power_state }}"
+        current_power_state: "{{ vm_details.status.resources.power_state }}"
 
     - name: Validate requested CPU increase
       fail:
@@ -90,36 +90,60 @@
           - "New Cores Per CPU           : {{ requested_vcpus_per_socket }}"
           - "New Total vCPU             : {{ requested_total_vcpus }}"
 
-    #####################################################################
-    # Power Off VM (Only if currently ON)
-    #####################################################################
+    
+    ####################################################################
+    # Power OFF VM
+    ####################################################################
 
-    - name: Power OFF VM
+    - name: Build Power Off Spec
+      set_fact:
+        poweroff_spec: >-
+          {{
+            current_spec |
+            combine(
+              {
+                'resources':
+                  current_spec.resources |
+                  combine(
+                    {
+                      'power_state': 'OFF'
+                    }
+                  )
+              },
+              recursive=True
+            )
+          }}
+
+    - name: Power Off VM
       uri:
-        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}/set_power_state"
-        method: POST
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: PUT
         user: "{{ prism_username }}"
         password: "{{ prism_password }}"
         force_basic_auth: yes
         validate_certs: no
         body_format: json
         body:
-          transition: "OFF"
-      when: power_state == "ON"
+          spec: "{{ poweroff_spec }}"
+          metadata:
+            kind: vm
+            uuid: "{{ vm_uuid }}"
+            spec_version: "{{ spec_version }}"
+      when: current_power_state == "ON"
 
-    - name: Wait for VM Power OFF
+    - name: Wait for VM OFF
       uri:
-        url: "https://{{ prism_host }}:9440/PrismGateway/services/rest/v2.0/vms/{{ vm_uuid }}"
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
         method: GET
         user: "{{ prism_username }}"
         password: "{{ prism_password }}"
         force_basic_auth: yes
         validate_certs: no
-      register: vm_status
-      until: vm_status.json.power_state == "OFF"
+      register: vm_off_status
+      until: vm_off_status.json.status.resources.power_state == "OFF"
       retries: 20
       delay: 15
-      when: power_state == "ON"
+      when: current_power_state == "ON"
 
     - name: Get complete VM specification
       uri:
@@ -184,24 +208,48 @@
       pause:
         seconds: 30
     
-    #################################################################
+    
+    ####################################################################
     # Power ON VM
-    #################################################################
+    ####################################################################
 
-    - name: Power ON VM
+    - name: Build Power On Spec
+      set_fact:
+        poweron_spec: >-
+          {{
+            vm_after_cpu_update.json.spec |
+            combine(
+              {
+                'resources':
+                  vm_after_cpu_update.json.spec.resources |
+                  combine(
+                    {
+                      'power_state': 'ON'
+                    }
+                  )
+              },
+              recursive=True
+            )
+          }}
+
+    - name: Power On VM
       uri:
-        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}/set_power_state"
-        method: POST
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: PUT
         user: "{{ prism_username }}"
         password: "{{ prism_password }}"
         force_basic_auth: yes
         validate_certs: no
         body_format: json
         body:
-          transition: "ON"
-      when: power_state == "ON"
+          spec: "{{ poweron_spec }}"
+          metadata:
+            kind: vm
+            uuid: "{{ vm_uuid }}"
+            spec_version: "{{ vm_after_cpu_update.json.metadata.spec_version }}"
+      when: current_power_state == "ON"
 
-    - name: Wait until VM is ON
+    - name: Wait for VM ON
       uri:
         url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
         method: GET
@@ -209,11 +257,11 @@
         password: "{{ prism_password }}"
         force_basic_auth: yes
         validate_certs: no
-      register: vm_poweron_status
-      until: vm_poweron_status.json.status.resources.power_state == "ON"
+      register: vm_on_status
+      until: vm_on_status.json.status.resources.power_state == "ON"
       retries: 20
       delay: 15
-      when: power_state == "ON"
+      when: current_power_state == "ON"
 
     - name: Verify updated CPU
       uri:
