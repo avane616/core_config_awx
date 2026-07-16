@@ -48,6 +48,7 @@
 
     - name: Capture CPU details
       set_fact:
+        current_spec: "{{ vm_details.json.spec | int }}"
         current_sockets: "{{ vm_details.status.resources.num_sockets | int }}"
         current_vcpus_per_socket: "{{ vm_details.status.resources.num_vcpus_per_socket | int }}"
         current_total_vcpus: "{{ (vm_details.status.resources.num_sockets | int) * (vm_details.status.resources.num_vcpus_per_socket | int) | int }}"
@@ -208,6 +209,20 @@
       pause:
         seconds: 30
     
+    ####################################################################
+    # Get Latest Spec After CPU Change
+    ####################################################################
+
+    - name: Refresh VM Details Again
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: no
+      register: vm_after_cpu_update
+
     
     ####################################################################
     # Power ON VM
@@ -246,7 +261,7 @@
           metadata:
             kind: vm
             uuid: "{{ vm_uuid }}"
-            spec_version: "{{ vm_after_cpu_update.json.metadata.spec_version }}"
+            spec_version: "{{ vm_after_cpu_update.json.metadata.spec_version | int  }}"
       when: current_power_state == "ON"
 
     - name: Wait for VM ON
