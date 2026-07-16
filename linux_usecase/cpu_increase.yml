@@ -143,12 +143,10 @@
         force_basic_auth: yes
         validate_certs: no
         body_format: json
-        body:
-          spec: "{{ poweroff_spec }}"
-          metadata:
-            kind: vm
-            uuid: "{{ vm_uuid }}"
-            spec_version: "{{ spec_version }}"
+        status_code:
+          - 200
+          - 202
+        body: "{{ poweroff_payload }}"
       when: current_power_state == "ON"
 
     - name: Wait for VM OFF
@@ -287,12 +285,10 @@
         force_basic_auth: yes
         validate_certs: no
         body_format: json
-        body:
-          spec: "{{ poweron_spec }}"
-          metadata:
-            kind: vm
-            uuid: "{{ vm_uuid }}"
-            spec_version: "{{ vm_after_cpu_update.json.metadata.spec_version | int  }}"
+        status_code:
+          - 200
+          - 202
+        body: "{{ poweroff_payload }}"
       when: current_power_state == "ON"
 
     - name: Wait for VM ON
