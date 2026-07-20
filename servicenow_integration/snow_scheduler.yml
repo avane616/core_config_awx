@@ -6,13 +6,13 @@
     assignment_group: "Nutanix%20Automation%20group"
     #catalog_item_name: "FileSystem%20Extension"    
     awx_job_templates:
-      FileSystem%20Extension:
+      FileSystem Extension:
         DEV: 18
         PROD: 21
-      Increase%20Memory:
+      Increase Memory:
         DEV: 19
         PROD: 22
-      Increase%20CPU:
+      Increase CPU:
         DEV: 20
         PROD: 23
     catalog_item_names:
