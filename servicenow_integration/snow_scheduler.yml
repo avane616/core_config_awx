@@ -170,6 +170,7 @@
     - name: Trigger AWX job template for each RITM
       uri:
         #url: " https://awx.dnkd1vsek8np100.velux.org/api/v2/job_templates/18/launch/"
+        url: "{{ awx_url }}/api/v2/job_templates/{{ item.job_template_id }}/launch/"
         method: POST
         user: "{{ lookup('env', 'username') }}"
         password: "{{ lookup('env', 'userpassword') }}"
@@ -187,7 +188,7 @@
               )
             )
           }}
-      loop: "{{ ritm_numbers }}"
+      loop: "{{ ritm_launch_data }}"
       loop_control:
-        label: "{{ item }}"
+        label: "{{ item.ritm_number }} - {{ item.catalog_name }}"
       register: job_launch_result
