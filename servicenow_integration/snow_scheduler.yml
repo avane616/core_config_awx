@@ -180,14 +180,10 @@
           Content-Type: "application/json"
         body_format: json
         status_code: [200, 201]
-        body: >
-          {{
-            dict(
-              extra_vars=dict(
-                ritm_number=item
-              )
-            )
-          }}
+        body:
+          extra_vars:
+            ritm_number: "{{ item.ritm_number }}"
+            catalog_name: "{{ item.catalog_name }}"
       loop: "{{ ritm_launch_data }}"
       loop_control:
         label: "{{ item.ritm_number }} - {{ item.catalog_name }}"
