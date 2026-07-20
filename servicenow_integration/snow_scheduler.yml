@@ -108,7 +108,7 @@
 
     - name: Trigger AWX job template for each RITM
       uri:
-        url: " https://awx.dnkd1vsek8np100.velux.org/api/v2/job_templates/18/launch/"
+        #url: " https://awx.dnkd1vsek8np100.velux.org/api/v2/job_templates/18/launch/"
         method: POST
         user: "{{ lookup('env', 'username') }}"
         password: "{{ lookup('env', 'userpassword') }}"
