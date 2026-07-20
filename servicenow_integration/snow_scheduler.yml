@@ -70,9 +70,9 @@
       set_fact:
         ritm_launch_data: "{{ ritm_launch_data | default([]) + [ {
             'ritm_number': item.item.number,
-            'catalog_name': item.json.result.name,
+            'catalog_name': item.json.result.name | trim,
             'environment': target_env,
-            'job_template_id': awx_job_templates[item.json.result.name][target_env]}]}}"
+            'job_template_id': awx_job_templates[item.json.result.name | trim][target_env]}]}}"
       loop: "{{ catalog_details.results }}"
       loop_control:
         label: "{{ item.item.number }}"
