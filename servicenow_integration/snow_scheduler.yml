@@ -63,7 +63,7 @@
             'environment': target_env,
             'job_template_id': awx_job_templates[item.cat_item.value][target_env]
           } ] }}"
-      loop: "{{ catalog_details.json.result }}"
+      loop: "{{ catalog_details.result }}"
 
 
     ####################################################################
