@@ -4,12 +4,21 @@
   vars: 
     servicenow_instance: "https://hcltechdemosls4.service-now.com"
     assignment_group: "Nutanix%20Automation%20group"
-    #catalog_item_name: "FileSystem%20Extension"
+    #catalog_item_name: "FileSystem%20Extension"    
+    awx_job_templates:
+      FileSystem%20Extension:
+        DEV: 18
+        PROD: 21
+      Increase%20Memory:
+        DEV: 19
+        PROD: 22
+      Increase%20CPU:
+        DEV: 20
+        PROD: 23
     catalog_item_names:
       - FileSystem%20Extension
       - Increase%20Memory
       - Increase%20CPU
-
   tasks:
 
     - name: Get open RITMs for the catalog item
@@ -30,6 +39,37 @@
       set_fact:
         ritm_sys_ids: "{{ ritm_response.json.result | map(attribute='sys_id') | list }}"
         ritm_numbers: "{{ ritm_response.json.result | map(attribute='number') | list }}"
+
+    ####################################################################
+    # Build Launch Data
+    ####################################################################
+
+    - name: Build RITM launch list
+      set_fact:
+        ritm_launch_data: "{{ ritm_launch_data | default([]) + [launch_item] }}"
+      vars:
+        catalog_item_name: "{{ item.cat_item.display_value }}"
+        # Environment variable from Catalog Variable
+        launch_item:
+          ritm_number: "{{ item.number }}"
+          catalog_item: "{{ catalog_item_name }}"
+          environment: "{{ target_env }}"
+          job_template_id: "{{ awx_job_templates[catalog_item_name][target_env] }}"
+      loop: "{{ ritm_response.json.result }}"
+
+    ####################################################################
+    # Debug
+    ####################################################################
+
+    - name: Display launch plan
+      debug:
+        msg:
+          - "RITM: {{ item.ritm_number }}"
+          - "Catalog Item: {{ item.catalog_item }}"
+          - "Environment: {{ item.environment }}"
+          - "Workflow ID: {{ item.job_template_id }}"
+      loop: "{{ ritm_launch_data }}"
+
 
     # - name: Get group approvals for RITMs
     #   uri:
