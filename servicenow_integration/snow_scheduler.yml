@@ -72,7 +72,7 @@
             'ritm_number': item.item.number,
             'catalog_name': item.json.result.name,
             'environment': target_env,
-            'job_template_id': awx_job_templates[item.json.result.name][target_env] } ] }}"
+            'job_template_id': awx_job_templates[item.json.result.name][target_env]}]}}"
       loop: "{{ catalog_details.results }}"
       loop_control:
         label: "{{ item.item.number }}"
