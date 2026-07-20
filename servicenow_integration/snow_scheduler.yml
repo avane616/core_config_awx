@@ -51,13 +51,13 @@
       loop: "{{ ritm_response.json.result }}"
       register: catalog_details
 
-  - name: Show Catalog Details
-    debug:
-      msg:
-        - "RITM Number: {{ item.item.number }}"
-        - "Catalog Name: {{ item.json.result.name }}"
-        - "Catalog SysID: {{ item.json.result.sys_id }}"
-    loop: "{{ catalog_details.results }}"
+    - name: Show Catalog Details
+      debug:
+        msg:
+          - "RITM Number: {{ item.item.number }}"
+          - "Catalog Name: {{ item.json.result.name }}"
+          - "Catalog SysID: {{ item.json.result.sys_id }}"
+      loop: "{{ catalog_details.results }}"
 `
       
     ####################################################################
