@@ -25,7 +25,7 @@
       uri:
         #url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^stateIN1,2&sysparm_fields=sys_id,number,variables"
         #url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^cat_item.name={{ catalog_item_name }}^stateIN1,2&sysparm_fields=sys_id,number,variables"
-        url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^cat_item.nameIN{{ catalog_item_names | join(',') }}^stateIN1,2&sysparm_fields=sys_id,number,variables"
+        url: "{{ servicenow_instance }}/api/now/table/sc_req_item?sysparm_query=active=true^cat_item.nameIN{{ catalog_item_names | join(',') }}^stateIN1,2&sysparm_fields=sys_id,number,cat_item,variables"
         method: GET
         user: "{{ lookup('env', 'user') }}"
         password: "{{ lookup('env', 'password') }}"
