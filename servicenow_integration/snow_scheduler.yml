@@ -6,9 +6,9 @@
     assignment_group: "Nutanix%20Automation%20group"
     #catalog_item_name: "FileSystem%20Extension"
     catalog_item_names:
-      - FileSystem Extension
-      - Memory Increase
-      - CPU Increase
+      - FileSystem%20Extension
+      - Increase%20Memory
+      - Increase%20CPU
 
   tasks:
 
