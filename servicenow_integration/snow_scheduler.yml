@@ -51,6 +51,7 @@
       loop: "{{ ritm_response.json.result }}"
       register: catalog_details
 
+
     - name: Show Catalog Details
       debug:
         msg:
@@ -58,7 +59,8 @@
           - "Catalog Name: {{ item.json.result.name }}"
           - "Catalog SysID: {{ item.json.result.sys_id }}"
       loop: "{{ catalog_details.results }}"
-`
+      loop_control:
+        label: "{{ item.item.number }}"
       
     ####################################################################
     # Build Launch Data
