@@ -57,16 +57,14 @@
 
     - name: Build RITM launch list
       set_fact:
-        ritm_launch_data: "{{ ritm_launch_data | default([]) + [launch_item] }}"
-      vars:
-        catalog_item_name: "{{ item.cat_item.display_value }}"
-        # Environment variable from Catalog Variable
-        launch_item:
-          ritm_number: "{{ item.number }}"
-          catalog_item: "{{ catalog_item_name }}"
-          environment: "{{ target_env }}"
-          job_template_id: "{{ awx_job_templates[catalog_item_name][target_env] }}"
-      loop: "{{ ritm_response.json.result }}"
+        ritm_launch_data: "{{ ritm_launch_data | default([]) + [ {
+            'ritm_number': item.number,
+            'catalog_sysid': item.cat_item.value,
+            'environment': target_env,
+            'job_template_id': awx_job_templates[item.cat_item.value][target_env]
+          } ] }}"
+      loop: "{{ catalog_details.json.result }}"
+
 
     ####################################################################
     # Debug
