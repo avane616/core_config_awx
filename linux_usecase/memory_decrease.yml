@@ -7,7 +7,7 @@
     prism_host: "10.45.203.90"
     prism_username: "automation"
     vm_name: "dnkgevseanst001"
-    reduce_memory_gb: "2"
+    reduce_memory_gb: "6"
 
   tasks:
 
