@@ -6,10 +6,26 @@
   vars:
     prism_host: "10.45.203.90"
     prism_username: "automation"
-    vm_name: "dnkgevseanst001"
+    #vm_name: "dnkgevseanst001"
     additional_memory_gb: "2"
 
   tasks:
+
+    - name: Resolve hostname from IP
+      command: "nslookup {{ ip_address }}"
+      register: nslookup_result
+      changed_when: false
+      failed_when: false
+    
+    - name: Extract VM name
+      set_fact:
+        vm_name: >-
+          {{
+            nslookup_result.stdout
+            | regex_search('name = ([^.]+)', '\1')
+            | first
+          }}
+      when: nslookup_result.rc == 0
 
     - name: Fetch VM details
       uri:
@@ -53,94 +69,94 @@
         vm_uuid: "{{ vm_details.metadata.uuid }}"
 
     
-    - name: Calculate requested memory
-      set_fact:
-        additional_memory_mb: "{{ additional_memory_gb | int * 1024 }}"
-        requested_memory_mb: "{{ current_memory_mb | int + (additional_memory_gb | int * 1024) }}"
+    # - name: Calculate requested memory
+    #   set_fact:
+    #     additional_memory_mb: "{{ additional_memory_gb | int * 1024 }}"
+    #     requested_memory_mb: "{{ current_memory_mb | int + (additional_memory_gb | int * 1024) }}"
         
-    - name: Verify memory increase is even number
-      fail:
-        msg: "Memory increase must be in even numbers (2,4,6,8...)"
-      when: additional_memory_gb | int is odd
+    # - name: Verify memory increase is even number
+    #   fail:
+    #     msg: "Memory increase must be in even numbers (2,4,6,8...)"
+    #   when: additional_memory_gb | int is odd
 
-    - name: Display current and requested memory
-      debug:
-        msg:
-          - "Current Memory : {{ (current_memory_mb|int/1024)|int }} GB"
-          - "Requested Memory : {{ (requested_memory_mb|int/1024)|int }} GB"
+    # - name: Display current and requested memory
+    #   debug:
+    #     msg:
+    #       - "Current Memory : {{ (current_memory_mb|int/1024)|int }} GB"
+    #       - "Requested Memory : {{ (requested_memory_mb|int/1024)|int }} GB"
 
-    - name: Get complete VM specification
-      uri:
-        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-        method: GET
-        user: "{{ prism_username }}"
-        password: "{{ prism_password }}"
-        force_basic_auth: true
-        validate_certs: false
-      register: vm_spec
+    # - name: Get complete VM specification
+    #   uri:
+    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+    #     method: GET
+    #     user: "{{ prism_username }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: true
+    #     validate_certs: false
+    #   register: vm_spec
 
-    - name: Build payload
-      set_fact:
-        vm_update_payload: >-
-          {{
-            {
-              'api_version': vm_spec.json.api_version,
-              'metadata': {
-                'kind': 'vm',
-                'uuid': vm_uuid,
-                'spec_version': vm_spec.json.metadata.spec_version | int
-              },
-              'spec': (
-                vm_spec.json.spec |
-                combine(
-                  {
-                    'resources': {
-                      'memory_size_mib': requested_memory_mb | int
-                    }
-                  },
-                  recursive=True
-                )
-              )
-            }
-          }}
+    # - name: Build payload
+    #   set_fact:
+    #     vm_update_payload: >-
+    #       {{
+    #         {
+    #           'api_version': vm_spec.json.api_version,
+    #           'metadata': {
+    #             'kind': 'vm',
+    #             'uuid': vm_uuid,
+    #             'spec_version': vm_spec.json.metadata.spec_version | int
+    #           },
+    #           'spec': (
+    #             vm_spec.json.spec |
+    #             combine(
+    #               {
+    #                 'resources': {
+    #                   'memory_size_mib': requested_memory_mb | int
+    #                 }
+    #               },
+    #               recursive=True
+    #             )
+    #           )
+    #         }
+    #       }}
     
-    - name: Update memory
-      uri:
-        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-        method: PUT
-        user: "{{ prism_username }}"
-        password: "{{ prism_password }}"
-        force_basic_auth: true
-        validate_certs: false
-        body_format: json           
-        status_code:
-          - 200
-          - 202
-        body: "{{ vm_update_payload }}"
-      register: memory_update
+    # - name: Update memory
+    #   uri:
+    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+    #     method: PUT
+    #     user: "{{ prism_username }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: true
+    #     validate_certs: false
+    #     body_format: json           
+    #     status_code:
+    #       - 200
+    #       - 202
+    #     body: "{{ vm_update_payload }}"
+    #   register: memory_update
 
-    - name: Wait for task completion
-      pause:
-        seconds: 30
+    # - name: Wait for task completion
+    #   pause:
+    #     seconds: 30
 
-    - name: Verify updated memory
-      uri:
-        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-        method: GET
-        user: "{{ prism_username }}"
-        password: "{{ prism_password }}"
-        force_basic_auth: true
-        validate_certs: false
-      register: verify_vm
+    # - name: Verify updated memory
+    #   uri:
+    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+    #     method: GET
+    #     user: "{{ prism_username }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: true
+    #     validate_certs: false
+    #   register: verify_vm
     
-    - name: Check memory increase status
-      debug:
-        msg: >-
-          {% if verify_vm.json.spec.resources.memory_size_mib | int == requested_memory_mb | int %}
-          Memory successfully increased
-          {% else %}
-          No changes in memory increase
-          {% endif %}
+    # - name: Check memory increase status
+    #   debug:
+    #     msg: >-
+    #       {% if verify_vm.json.spec.resources.memory_size_mib | int == requested_memory_mb | int %}
+    #       Memory successfully increased
+    #       {% else %}
+    #       No changes in memory increase
+    #       {% endif %}
 
     #     success_msg: "Memory successfully increased"
     #     fail_msg: "Memory increase verification failed"
