@@ -6,6 +6,7 @@
   vars:
     prism_host: "10.45.203.90"
     prism_username: "automation"
+    ip_address: "10.223.17.5"
     #vm_name: "dnkgevseanst001"
     additional_memory_gb: "2"
 
