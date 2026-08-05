@@ -11,22 +11,32 @@
     additional_memory_gb: "2"
 
   tasks:
+    - name: Fetch VM details using IP
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
+        method: POST
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: false
+        body_format: json
+        headers:
+          Content-Type: "application/json"
+        body:
+          kind: vm
+          filter: "ip_addresses=={{ ip_address }}"
+      register: vm_response_by_ip
+      when:
+        - (vm_name is not defined or vm_name | trim == "")
+        - ip_address is defined
 
-    - name: Resolve hostname from IP
-      command: "host {{ ip_address }}"
-      register: nslookup_result
-      changed_when: false
-      failed_when: false
-    
-    - name: Extract VM name
+    - name: Set VM name from Nutanix response
       set_fact:
-        vm_name: >-
-          {{
-            nslookup_result.stdout
-            | regex_search('name = ([^.]+)', '\1')
-            | first
-          }}
-      when: nslookup_result.rc == 0
+        vm_name: "{{ vm_response_by_ip.json.entities[0].spec.name }}"
+      when:
+        - vm_response_by_ip.json.entities | length > 0
+    
+
 
     - name: Fetch VM details
       uri:
