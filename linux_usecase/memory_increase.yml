@@ -13,7 +13,7 @@
   tasks:
 
     - name: Resolve hostname from IP
-      command: "nslookup {{ ip_address }}"
+      command: "host {{ ip_address }}"
       register: nslookup_result
       changed_when: false
       failed_when: false
