@@ -55,7 +55,8 @@
       set_fact:
         reduce_memory_mb: "{{ reduce_memory_gb | int * 1024 }}"
         requested_memory_mb: "{{ current_memory_mb | int - (reduce_memory_gb | int * 1024) }}"
-
+        current_power_state: "{{ vm_details.status.resources.power_state }}"
+        
     - name: Verify memory reduction is even number
       fail:
         msg: "Memory reduction must be in even numbers (2,4,6,8...)"
@@ -83,7 +84,89 @@
         validate_certs: false
       register: vm_spec
 
-    - name: Build payload
+
+    ####################################################################
+    # Power OFF VM
+    ####################################################################
+    - name: Get complete VM specification
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+      register: vm_response 
+    - name: Prepare Power Off Payload
+      set_fact:
+        poweroff_payload: >-
+          {{
+            {
+              'api_version': vm_response.json.api_version,
+              'metadata': {
+                'kind': 'vm',
+                'uuid': vm_uuid,
+                'spec_version': vm_response.json.metadata.spec_version | int
+              },
+              'spec': (
+                vm_response.json.spec |
+                combine(
+                  {
+                    'resources': (
+                      vm_response.json.spec.resources |
+                      combine(
+                        {
+                          'power_state': 'OFF'
+                        }
+                      )
+                    )
+                  },
+                  recursive=True
+                )
+              )
+            }
+          }}
+
+    - name: Power Off VM
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: PUT
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: no
+        body_format: json
+        status_code:
+          - 200
+          - 202
+        body: "{{ poweroff_payload }}"
+      when: current_power_state == "ON"
+
+    - name: Wait for VM OFF
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: no
+      register: vm_off_status
+      until: vm_off_status.json.status.resources.power_state == "OFF"
+      retries: 20
+      delay: 15
+      when: current_power_state == "ON"
+
+    - name: Get complete VM specification
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: true
+        validate_certs: false
+      register: vm_spec
+
+    - name: Build Memory decrease payload
       set_fact:
         vm_update_payload: >-
           {{
@@ -99,7 +182,7 @@
                 combine(
                   {
                     'resources': {
-                      'memory_size_mib': requested_memory_mb | int
+                       'memory_size_mib': requested_memory_mb | int
                     }
                   },
                   recursive=True
@@ -108,7 +191,11 @@
             }
           }}
 
-    - name: Decrease memory
+    - name: Display update payload
+      debug:
+        var: vm_update_payload
+
+    - name: Update CPU
       uri:
         url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
         method: PUT
@@ -121,11 +208,139 @@
           - 200
           - 202
         body: "{{ vm_update_payload }}"
-      register: memory_update
+      register: cpu_update
+
+    - name: Display update response
+      debug:
+        var: cpu_update.json
 
     - name: Wait for task completion
       pause:
         seconds: 30
+    
+    ####################################################################
+    # Get Latest Spec After CPU Change
+    ####################################################################
+
+    - name: Refresh VM Details Again
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: no
+      register: vm_after_cpu_update
+
+    
+    ####################################################################
+    # Power ON VM
+    ####################################################################
+
+    - name: Prepare Power On Payload
+      set_fact:
+        poweron_payload: >-
+          {{
+            {
+              'api_version': vm_after_cpu_update.json.api_version,
+              'metadata': {
+                'kind': 'vm',
+                'uuid': vm_uuid,
+                'spec_version': vm_after_cpu_update.json.metadata.spec_version | int
+              },
+              'spec': (
+                vm_after_cpu_update.json.spec |
+                combine(
+                  {
+                    'resources': (
+                      vm_after_cpu_update.json.spec.resources |
+                      combine(
+                        {
+                          'power_state': 'ON'
+                        }
+                      )
+                    )
+                  },
+                  recursive=True
+                )
+              )
+            }
+          }}
+
+
+    - name: Power On VM
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: PUT
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: no
+        body_format: json
+        status_code:
+          - 200
+          - 202
+        body: "{{ poweron_payload }}"
+      when: current_power_state == "ON"
+
+    - name: Wait for VM ON
+      uri:
+        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+        method: GET
+        user: "{{ prism_username }}"
+        password: "{{ prism_password }}"
+        force_basic_auth: yes
+        validate_certs: no
+      register: vm_on_status
+      until: vm_on_status.json.status.resources.power_state == "ON"
+      retries: 20
+      delay: 15
+      when: current_power_state == "ON"
+
+#33##
+    # - name: Build payload
+    #   set_fact:
+    #     vm_update_payload: >-
+    #       {{
+    #         {
+    #           'api_version': vm_spec.json.api_version,
+    #           'metadata': {
+    #             'kind': 'vm',
+    #             'uuid': vm_uuid,
+    #             'spec_version': vm_spec.json.metadata.spec_version | int
+    #           },
+    #           'spec': (
+    #             vm_spec.json.spec |
+    #             combine(
+    #               {
+    #                 'resources': {
+    #                   'memory_size_mib': requested_memory_mb | int
+    #                 }
+    #               },
+    #               recursive=True
+    #             )
+    #           )
+    #         }
+    #       }}
+
+    # - name: Decrease memory
+    #   uri:
+    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+    #     method: PUT
+    #     user: "{{ prism_username }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: true
+    #     validate_certs: false
+    #     body_format: json
+    #     status_code:
+    #       - 200
+    #       - 202
+    #     body: "{{ vm_update_payload }}"
+    #   register: memory_update
+
+    # - name: Wait for task completion
+    #   pause:
+    #     seconds: 30
 
     - name: Verify updated memory
       uri:
