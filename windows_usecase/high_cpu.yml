@@ -92,13 +92,13 @@
       when: final_cpu_usage >= cpu_threshold
 
 ################Error Handling###############################
-      rescue:
-        - name: Playbook Failed
-          debug:
-            msg: "Unexpected error occured while executing CPU Utilization playbook."
+#       rescue:
+#         - name: Playbook Failed
+#           debug:
+#             msg: "Unexpected error occured while executing CPU Utilization playbook."
 
-#################Always######################################
-      always:
-        - name: Execution completed
-          debug:
-            msg: "CPU Utilization playbook completed."
+# #################Always######################################
+#       always:
+#         - name: Execution completed
+#           debug:
+#             msg: "CPU Utilization playbook completed."
