@@ -1,0 +1,104 @@
+---
+- name: Ping Windows Servers
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+
+    - name: Add dynamic host to inventory with credentials
+      add_host:
+        name: "DNKD1VSEANST001"
+        groups: dynamic_targets
+        ansible_connection: winrm
+        ansible_winrm_transport: ntlm
+        ansible_winrm_server_cert_validation: ignore
+        ansible_user: "awxiacnprd"
+        ansible_password: "{{ password }}"
+        ansible_port: 5985
+
+- name: CPU Utilization Monitoring
+  hosts: dynamic_targets
+  gather_facts: no
+
+  vars:
+
+    cpu_threshold: 80
+    number_of_checks: 3
+    wait_time: 600
+    restart_wait: 180
+    services:
+      - process: HealthService.exe
+        service: HealthService
+
+      - process: PythonService.exe
+        service: PyhtonService
+
+      - process: Spooler.exe
+        service: Spooler
+
+      - process: CcmExec.exe
+        service: CcmExec
+
+  tasks:
+################CPU Check loop######################
+    - name: Perform CPU Utilization checks
+      include_tasks: cpu_precheck.yml
+      loop: "{{ range(1, max_checks +1) | list }}"
+
+      loop_control:
+        loop_var: check_number
+
+##################Restart Service after third check###################################
+    - name: Restart Required services
+      ansible.windows.win_service:
+        name:"{{ item.service }}"
+        state: restarted
+      loop: "{{ services }}"
+      when:
+        - cpu_still_high | default(false)
+        - item.process in (third_check_processes | map(attribute='PrcoessName') | list) ##Restart the service only if its process name exists in Top 10 process list collected during third check
+##################Wait After Restart###########################################
+
+    - name: Wait for Services to stabilize
+      pause:
+        seconds: "{{ restart_wait }}"
+      when: cpu_still_high | deafault(false)
+#############Final CPU Check####################################
+
+    - name: Get Final CPU Utilization
+      ansible.windows.win_shell: |
+        $cpu= (Get-Counter '\Processor(_Total)\% Processor Time').CounterSamples.CookedValue
+        [math]::Round($cpu,2)
+      register: final_cpu
+
+#####################################################
+    - name: Store Final CPU Value
+      set_fact:
+        final_cpu_usage: "{{final_cpu.stdout | trim | float}}"
+
+    - name: Display Final CPU Utilization
+      debug:
+        msg: "Final CPU Utilization = {{final_cpu_usage }}%"
+################Final Decision#############################################
+
+    - name: Resolve incident
+      debug:
+        msg: "CPU Utilization is below threshold.Resolve the incident."
+      when: final_cpu_usage < cpu_threshold
+
+    - name: Transfer incident
+      debug:
+        msg: "CPU Utilization is still above threshold.Transferring the incident."
+      when: final_cpu_usage >= cpu_threshold
+
+################Error Handling###############################
+      rescue:
+        - name: Playbook Failed
+          debug:
+            msg: "Unexpected error occured while executing CPU Utilization playbook."
+
+#################Always######################################
+      always:
+        - name: Execution completed
+          debug:
+            msg: "CPU Utilization playbook completed."
