@@ -1,0 +1,81 @@
+---
+##########Display Current check##############
+
+- name: Display current check
+  debug:
+    msg: "Starting CPU Check {{ check_number }}"
+##########Get Current CPU Utilization########
+
+- name: Get current CPU Utilization
+  ansible.windows.win_shell: |
+    $cpu = (Get-Counter '\Processor(_Total)\% Processor Time').CounterSamples.CookedValue
+    [math]::Round($cpu,2)
+  register: cpu_result
+
+###########Store & Display CPU Value##########
+
+- name: Store CPU value
+  set_fact:
+    cpu_usage: "{{ cpu_result.stdout | trim |float }}"
+
+- name: Display CPU value
+  debug:
+    msg: "Current CPU Utilization : {{ cpu_usage }} %"
+
+###########Get Top 10 CPU consuming processes####
+
+- name: Get Top 10 processes
+  ansible.windows.win_shell: |
+
+    Get-Process |
+    Sort-Object CPU -Descending |
+    Select-Object -First 10 `
+        @{Name= 'ProcessName';Expression={$_.ProcessName + '.exe'}},
+        @{Name= 'ProcessId';Expression={$_.Id}},
+        @{Name= 'CPUTimeSeconds';Expression={[math]::Round($_.CPU,2)}} | ConvertTo-Json -Depth 2
+
+  register: process_output
+
+###########Store & Display Top Process list#########
+
+- name: Store Top 10 CPU Processes
+  set_fact:
+    top_processes: "{{ process_output.stdout | from_json }}"
+
+- name: Display Top 10 CPU Processes
+  debug:
+    var: top_processes
+
+###########Third check process list#################
+
+- name: Save Third Check Process list
+  set_fact:
+    third_check_processes: "{{ top_processes }}"
+  when: check_number == max_checks
+
+############CPU below threshold####################
+
+- name: Resolve Incident
+  debug:
+    msg: "CPU Utilization is below threshold. Resolving"
+
+  when: cpu_usage < cpu_threshold
+
+
+###########Mark CPU Still high##############
+
+- name: MArk CPU still high
+  set_fact:
+    cpu_still_high: true
+
+  when:
+    - check_number == max_checks
+    - cpu_usage >= cpu_threshold
+
+###########Wait before next check##############
+
+- name: Wait before next CPU check
+  pause:
+    seconds: "{{ wait_time }}"
+
+  when: check_number < max_checks
