@@ -51,7 +51,7 @@
 ##################Restart Service after third check###################################
     - name: Restart Required services
       ansible.windows.win_service:
-        name:"{{ item.service }}"
+        name: "{{ item.service }}"
         state: restarted
       loop: "{{ services }}"
       when:
