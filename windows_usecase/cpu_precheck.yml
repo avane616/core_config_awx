@@ -26,14 +26,12 @@
 
 - name: Get Top 10 processes
   ansible.windows.win_shell: |
-
     Get-Process |
     Sort-Object CPU -Descending |
     Select-Object -First 10 `
         @{Name= 'ProcessName';Expression={$_.ProcessName + '.exe'}},
         @{Name= 'ProcessId';Expression={$_.Id}},
         @{Name= 'CPUTimeSeconds';Expression={[math]::Round($_.CPU,2)}} | ConvertTo-Json -Depth 2
-
   register: process_output
 
 ###########Store & Display Top Process list#########
