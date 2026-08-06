@@ -24,6 +24,7 @@
 
     cpu_threshold: 80
     number_of_checks: 3
+    max_checks: 3
     wait_time: 600
     restart_wait: 180
     services:
