@@ -22,11 +22,11 @@
 
   vars:
 
-    cpu_threshold: 80
+    cpu_threshold: 4
     number_of_checks: 3
     max_checks: 3
-    wait_time: 600
-    restart_wait: 180
+    wait_time: 30
+    restart_wait: 30
     services:
       - process: HealthService.exe
         service: HealthService
@@ -85,12 +85,12 @@
     - name: Resolve incident
       debug:
         msg: "CPU Utilization is below threshold.Resolve the incident."
-      when: final_cpu_usage < cpu_threshold
+      when: (final_cpu_usage | int) < (cpu_threshold | int)
 
     - name: Transfer incident
       debug:
         msg: "CPU Utilization is still above threshold.Transferring the incident."
-      when: final_cpu_usage >= cpu_threshold
+      when: (final_cpu_usage | int) >= (cpu_threshold | int)
 
 ################Error Handling###############################
 #       rescue:
