@@ -43,12 +43,26 @@
         $os = Get-CimInstance Win32_OperatingSystem
         $total = [double]$os.TotalVisibleMemorySize
         $free = [double]$os.FreePhysicalMemory
-        :Round((($total - $free) / $total) * 100,2)
+    
+        if ($total -gt 0) {
+          :Round((($total - $free) / $total) * 100, 2)
+        }
+        else {
+          0
+        }
       register: memory_usage
+
+    # - name: Retrieve current memory utilization
+    #   ansible.windows.win_shell: |
+    #     $os = Get-CimInstance Win32_OperatingSystem
+    #     $total = [double]$os.TotalVisibleMemorySize
+    #     $free = [double]$os.FreePhysicalMemory
+    #     :Round((($total - $free) / $total) * 100,2)
+    #   register: memory_usage
 
     - name: Display current memory utilization
       debug:
-        msg: "Current Memory Utilization : {{ memory_usage.stdout }} %"
+        msg: "Current Memory Usage: {{ memory_usage.stdout | float }}%"
 
     - name: Stop execution if memory utilization is below threshold
       meta: end_play
