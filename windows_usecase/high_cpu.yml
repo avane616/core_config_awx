@@ -69,7 +69,7 @@
     - name: Wait for Services to stabilize
       pause:
         seconds: "{{ restart_wait }}"
-      when: cpu_still_high | deafault(false)
+      when: cpu_still_high | default(false)
 #############Final CPU Check####################################
 
     - name: Get Final CPU Utilization
