@@ -93,7 +93,7 @@
         $os = Get-CimInstance Win32_OperatingSystem
         $total = [double]$os.TotalVisibleMemorySize
         $free = [double]$os.FreePhysicalMemory
-        :Round((($total - $free) / $total) * 100,2)
+        (($total - $free) / $total) * 100
       register: final_memory
 
     - name: Calculate memory reduction
