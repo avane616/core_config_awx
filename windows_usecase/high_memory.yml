@@ -1,0 +1,117 @@
+---
+- name: Ping Windows Servers
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+
+    - name: Add dynamic host to inventory with credentials
+      add_host:
+        name: "DNKD1VSEANST001"
+        groups: dynamic_targets
+        ansible_connection: winrm
+        ansible_winrm_transport: ntlm
+        ansible_winrm_server_cert_validation: ignore
+        ansible_user: "awxiacnprd"
+        ansible_password: "{{ password }}"
+        ansible_port: 5985
+
+- name: CPU Utilization Monitoring
+  hosts: dynamic_targets
+  gather_facts: no
+
+  vars:
+    memory_threshold: 50
+
+    monitored_processes:
+      HealthService:
+        service: HealthService
+
+      PythonService:
+        service: "Nutanix Guest Agent"
+
+      spoolsv:
+        service: Spooler
+
+      CcmExec:
+        service: CcmExec
+
+  tasks:
+
+    - name: Retrieve current memory utilization
+      ansible.windows.win_shell: |
+        $os = Get-CimInstance Win32_OperatingSystem
+        $total = [double]$os.TotalVisibleMemorySize
+        $free = [double]$os.FreePhysicalMemory
+        :Round((($total - $free) / $total) * 100,2)
+      register: memory_usage
+
+    - name: Display current memory utilization
+      debug:
+        msg: "Current Memory Utilization : {{ memory_usage.stdout }} %"
+
+    - name: Stop execution if memory utilization is below threshold
+      meta: end_play
+      when:
+        - memory_usage.stdout | float < memory_threshold
+
+    - name: Retrieve top 10 memory consuming processes
+      ansible.windows.win_shell: |
+        Get-Process |
+        Sort-Object WorkingSet -Descending |
+        Select-Object -First 10 -ExpandProperty ProcessName
+      register: top_processes
+
+    - name: Display top processes
+      debug:
+        var: top_processes.stdout_lines
+
+    - name: Restart approved services
+      ansible.windows.win_service:
+        name: "{{ item.value.service }}"
+        state: restarted
+      loop: "{{ monitored_processes | dict2items }}"
+      when:
+        - item.key in top_processes.stdout
+      register: restarted_services
+
+    - name: Wait for stabilization
+      pause:
+        seconds: 30
+
+    - name: Recheck memory utilization
+      ansible.windows.win_shell: |
+        $os = Get-CimInstance Win32_OperatingSystem
+        $total = [double]$os.TotalVisibleMemorySize
+        $free = [double]$os.FreePhysicalMemory
+        :Round((($total - $free) / $total) * 100,2)
+      register: final_memory
+
+    - name: Calculate memory reduction
+      set_fact:
+        memory_reduction: "{{ memory_usage.stdout | float - final_memory.stdout | float }}"
+
+    - name: Display final memory utilization
+      debug:
+        msg: "Memory Utilization After Remediation : {{ final_memory.stdout }} %"
+
+    - name: Display memory reduction
+      debug:
+        msg: "Memory Reduced By : {{ memory_reduction }} %"
+
+    - name: Mark remediation successful
+      debug:
+        msg: >
+          Remediation Successful.
+          Memory utilization reduced below threshold.
+      when:
+        - final_memory.stdout | float < memory_threshold
+
+    - name: Escalate for manual investigation
+      debug:
+        msg: >
+          Memory utilization remains above threshold after
+          automated remediation. Manual investigation by
+          Application/Infrastructure/SCOM team is required.
+      when:
+        - final_memory.stdout | float >= memory_threshold
