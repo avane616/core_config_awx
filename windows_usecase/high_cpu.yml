@@ -57,7 +57,13 @@
       loop: "{{ services }}"
       when:
         - cpu_still_high | default(false)
-        - item.process in (third_check_processes | map(attribute='PrcoessName') | list) ##Restart the service only if its process name exists in Top 10 process list collected during third check
+        - item.process in (
+            third_check_processes
+            | selectattr('ProcessName', 'defined')
+            | map(attribute='ProcessName')
+            | list
+            )
+        #- item.process in (third_check_processes | map(attribute='PrcoessName') | list) ##Restart the service only if its process name exists in Top 10 process list collected during third check
 ##################Wait After Restart###########################################
 
     - name: Wait for Services to stabilize
