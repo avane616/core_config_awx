@@ -22,7 +22,7 @@
 
   vars:
 
-    cpu_threshold: 4
+    cpu_threshold: 3
     number_of_checks: 3
     max_checks: 3
     wait_time: 30
