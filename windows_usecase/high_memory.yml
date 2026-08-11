@@ -44,12 +44,7 @@
         $total = [double]$os.TotalVisibleMemorySize
         $free = [double]$os.FreePhysicalMemory
     
-        if ($total -gt 0) {
-          :Round((($total - $free) / $total) * 100, 2)
-        }
-        else {
-          0
-        }
+        (($total - $free) / $total) * 100
       register: memory_usage
 
     # - name: Retrieve current memory utilization
