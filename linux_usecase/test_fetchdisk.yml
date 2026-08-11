@@ -78,17 +78,33 @@
         validate_certs: false
         return_content: true
       register: vm_detail
- 
+
+    - name: Build disk information list
+      ansible.builtin.set_fact:
+        disk_info: "{{ disk_info | default([]) + [ {
+          'device_type': item.device_properties.device_type,
+          'bus': item.device_properties.disk_address.adapter_type,
+          'index': item.device_properties.disk_address.device_index,
+          'vmdisk_uuid': item.uuid,
+          'storage_container_uuid': item.storage_config.storage_container_reference.uuid,
+          'size_bytes': item.disk_size_bytes
+        } ] }}"
+      loop: "{{ vm_detail.json.status.resources.disk_list }}"
+    
     - name: Show disk UUIDs
       ansible.builtin.debug:
-        msg: >-
-          {{ vm_detail.json.status.resources.disk_list
-             | json_query('[].{device_type: device_properties.device_type,
-                               bus: device_properties.disk_address.adapter_type,
-                               index: device_properties.disk_address.device_index,
-                               vmdisk_uuid: uuid,
-                               storage_container_uuid: storage_config.storage_container_reference.uuid,
-                               size_bytes: disk_size_bytes}') }}
+        var: disk_info
+ 
+    # - name: Show disk UUIDs
+    #   ansible.builtin.debug:
+    #     msg: >-
+    #       {{ vm_detail.json.status.resources.disk_list
+    #          | json_query('[].{device_type: device_properties.device_type,
+    #                            bus: device_properties.disk_address.adapter_type,
+    #                            index: device_properties.disk_address.device_index,
+    #                            vmdisk_uuid: uuid,
+    #                            storage_container_uuid: storage_config.storage_container_reference.uuid,
+    #                            size_bytes: disk_size_bytes}') }}
                                
 
 # - name: Fetch Nutanix VM disk UUIDs via Prism Element v2 REST API
