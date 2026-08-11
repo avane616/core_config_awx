@@ -56,8 +56,8 @@
 - name: Resolve Incident
   debug:
     msg: "CPU Utilization is below threshold. Resolving"
-
-  when: cpu_usage < cpu_threshold
+  when: (cpu_usage | int) < (cpu_threshold | int)
+ # when: cpu_usage < cpu_threshold
 
 
 ###########Mark CPU Still high##############
@@ -68,7 +68,7 @@
 
   when:
     - check_number == max_checks
-    - cpu_usage >= cpu_threshold
+    - (cpu_usage | int) < (cpu_threshold | int)
 
 ###########Wait before next check##############
 
