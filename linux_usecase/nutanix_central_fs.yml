@@ -10,8 +10,8 @@
         cmd: "acli -o json vm.get {{ vm_name }}"
       delegate_to: "{{ cvm_host }}"
       vars:
-        ansible_user: "nutanix"
-        ansible_ssh_pass: "{{ vault_cvm_password }}"
+        ansible_user: "admin"
+        ansible_ssh_pass: "{{ prism_password }}"
       register: acli_json
       changed_when: false
  
