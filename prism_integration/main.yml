@@ -5,8 +5,9 @@
 
   vars:
     #prism_host: "dnkhovpcp001"
-    prism_host: "10.45.203.90"
-    prism_user: "automation"
+    #prism_host: "10.45.203.90"
+    prism_host: "10.45.203.76"
+    prism_user: "admin"
 
   tasks:
 
