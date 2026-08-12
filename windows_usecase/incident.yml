@@ -7,7 +7,8 @@
     servicenow_url: "https://hcltechdemosls4.service-now.com"
     assignment_group_name: "Nutanix%20Automation%20group"
     state: 2
-    required_keyword: "Total CPU Utilization Percentage is too high"
+    required_cpu_keyword: "Total CPU Utilization Percentage is too high"
+    required_memory_keyword: "Percentage of Committed Memory in Use is too high"
  
   tasks:
     - name: Get assignment group
@@ -82,9 +83,15 @@
  
     - name: Compare extracted keyword with required keyword
       ansible.builtin.set_fact:
-        matching_incidents: "{{ matching_incidents + [ item ] }}"
+        matching_cpu_incidents: "{{ matching_cpu_incidents + [ item ] }}"
       loop: "{{ processed_incidents }}"
-      when: required_keyword | lower in item.keyword | lower
+      when: required_cpu_keyword | lower in item.keyword | lower
+
+    - name: Compare extracted keyword with required keyword
+      ansible.builtin.set_fact:
+        matching_memory_incidents: "{{ matching_memory_incidents + [ item ] }}"
+      loop: "{{ processed_incidents }}"
+      when: required_memory_keyword | lower in item.keyword | lower
  
     - name: Display matching incidents
       ansible.builtin.debug:
