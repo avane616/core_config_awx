@@ -9,6 +9,8 @@
     state: 1
     required_cpu_keyword: "Total CPU Utilization Percentage is too high"
     required_memory_keyword: "Percentage of Committed Memory in Use is too high"
+    cpu_template_id: 33
+    memory_template_id: 34
  
   tasks:
     - name: Get assignment group
@@ -93,4 +95,67 @@
         matching_memory_incidents: "{{ matching_memory_incidents + [ item ] }}"
       loop: "{{ processed_incidents }}"
       when: required_memory_keyword | lower in item.keyword | lower
- 
+
+    - name: Update incidents and move to In Progress
+      ansible.builtin.uri:
+        url: "{{ servicenow_url }}/api/now/table/incident/{{ item.sys_id }}"
+        method: PATCH
+        user: "{{ lookup('env', 'user') }}"
+        password: "{{ lookup('env', 'password') }}"
+        force_basic_auth: true
+        headers:
+          Accept: "application/json"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          state: "2"
+          work_notes: "Ansible Automation remediation steps has been initiated this alert."
+        status_code: 200
+        loop: "{{ matching_cpu_incidents + matching_memory_incidents }}"
+        register: update_result
+        when: (matching_cpu_incidents | length > 0) or
+        (matching_memory_incidents | length > 0)
+
+      - name: Launch CPU remediation template
+        ansible.builtin.uri:
+          url: "{{ awx_url }}/api/v2/job_templates/{{ cpu_template_id }}/launch/"
+          method: POST
+          user: "{{ lookup('env', 'username') }}"
+          password: "{{ lookup('env', 'userpassword') }}"
+          force_basic_auth: yes
+          validate_certs: no
+          headers:
+            Content-Type: "application/json"
+          body_format: json
+          status_code: [200, 201]
+          body:
+            extra_vars:
+              incident_number: "{{ item.number }}"
+              incident_sys_id: "{{ item.sys_id }}"
+              ci_name: "{{ item.ci_name }}"
+              remediation_type: "cpu"
+        loop: "{{ matching_cpu_incidents }}"
+        register: cpu_awx_jobs
+        when: matching_cpu_incidents | length > 0
+
+      - name: Launch Memory remediation template
+        ansible.builtin.uri:
+          url: "{{ awx_url }}/api/v2/job_templates/{{ memory_template_id }}/launch/"
+          method: POST
+          user: "{{ lookup('env', 'username') }}"
+          password: "{{ lookup('env', 'userpassword') }}"
+          force_basic_auth: yes
+          validate_certs: no
+          headers:
+            Content-Type: "application/json"
+          body_format: json
+          status_code: [200, 201]
+          body:
+            extra_vars:
+              incident_number: "{{ item.number }}"
+              incident_sys_id: "{{ item.sys_id }}"
+              ci_name: "{{ item.ci_name }}"
+              remediation_type: "memory"
+        loop: "{{ matching_memory_incidents }}"
+        register: memory_awx_jobs
+        when: matching_memory_incidents | length > 0
