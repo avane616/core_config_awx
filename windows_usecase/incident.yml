@@ -94,6 +94,3 @@
       loop: "{{ processed_incidents }}"
       when: required_memory_keyword | lower in item.keyword | lower
  
-    - name: Display matching incidents
-      ansible.builtin.debug:
-        var: matching_incident
