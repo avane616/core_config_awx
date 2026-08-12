@@ -116,46 +116,46 @@
         when: (matching_cpu_incidents | length > 0) or
         (matching_memory_incidents | length > 0)
 
-      - name: Launch CPU remediation template
-        ansible.builtin.uri:
-          url: "{{ awx_url }}/api/v2/job_templates/{{ cpu_template_id }}/launch/"
-          method: POST
-          user: "{{ lookup('env', 'username') }}"
-          password: "{{ lookup('env', 'userpassword') }}"
-          force_basic_auth: yes
-          validate_certs: no
-          headers:
-            Content-Type: "application/json"
-          body_format: json
-          status_code: [200, 201]
-          body:
-            extra_vars:
-              incident_number: "{{ item.number }}"
-              incident_sys_id: "{{ item.sys_id }}"
-              ci_name: "{{ item.ci_name }}"
-              remediation_type: "cpu"
-        loop: "{{ matching_cpu_incidents }}"
-        register: cpu_awx_jobs
-        when: matching_cpu_incidents | length > 0
+    - name: Launch CPU remediation template
+      ansible.builtin.uri:
+        url: "{{ awx_url }}/api/v2/job_templates/{{ cpu_template_id }}/launch/"
+        method: POST
+        user: "{{ lookup('env', 'username') }}"
+        password: "{{ lookup('env', 'userpassword') }}"
+        force_basic_auth: yes
+        validate_certs: no
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        status_code: [200, 201]
+        body:
+          extra_vars:
+            incident_number: "{{ item.number }}"
+            incident_sys_id: "{{ item.sys_id }}"
+            ci_name: "{{ item.ci_name }}"
+            remediation_type: "cpu"
+      loop: "{{ matching_cpu_incidents }}"
+      register: cpu_awx_jobs
+      when: matching_cpu_incidents | length > 0
 
-      - name: Launch Memory remediation template
-        ansible.builtin.uri:
-          url: "{{ awx_url }}/api/v2/job_templates/{{ memory_template_id }}/launch/"
-          method: POST
-          user: "{{ lookup('env', 'username') }}"
-          password: "{{ lookup('env', 'userpassword') }}"
-          force_basic_auth: yes
-          validate_certs: no
-          headers:
-            Content-Type: "application/json"
-          body_format: json
-          status_code: [200, 201]
-          body:
-            extra_vars:
-              incident_number: "{{ item.number }}"
-              incident_sys_id: "{{ item.sys_id }}"
-              ci_name: "{{ item.ci_name }}"
-              remediation_type: "memory"
-        loop: "{{ matching_memory_incidents }}"
-        register: memory_awx_jobs
-        when: matching_memory_incidents | length > 0
+    - name: Launch Memory remediation template
+      ansible.builtin.uri:
+        url: "{{ awx_url }}/api/v2/job_templates/{{ memory_template_id }}/launch/"
+        method: POST
+        user: "{{ lookup('env', 'username') }}"
+        password: "{{ lookup('env', 'userpassword') }}"
+        force_basic_auth: yes
+        validate_certs: no
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        status_code: [200, 201]
+        body:
+          extra_vars:
+            incident_number: "{{ item.number }}"
+            incident_sys_id: "{{ item.sys_id }}"
+            ci_name: "{{ item.ci_name }}"
+            remediation_type: "memory"
+      loop: "{{ matching_memory_incidents }}"
+      register: memory_awx_jobs
+      when: matching_memory_incidents | length > 0
