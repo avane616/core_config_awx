@@ -15,8 +15,8 @@
       ansible.builtin.uri:
         url: "{{ servicenow_url }}/api/now/table/sys_user_group?sysparm_query=name={{ assignment_group_name }}&sysparm_fields=sys_id,name&sysparm_limit=1"
         method: GET
-        url_username: "{{ servicenow_username }}"
-        url_password: "{{ servicenow_password }}"
+        user: "{{ lookup('env', 'user') }}"
+        password: "{{ lookup('env', 'password') }}"
         force_basic_auth: true
         headers:
           Accept: "application/json"
@@ -42,8 +42,8 @@
       ansible.builtin.uri:
         url: "{{ servicenow_url }}/api/now/table/incident?sysparm_query=assignment_group={{ assignment_group_sys_id }}^state={{ state }}&sysparm_fields=number,short_description,assignment_group,state,sys_id"
         method: GET
-        url_username: "{{ servicenow_username }}"
-        url_password: "{{ servicenow_password }}"
+        user: "{{ lookup('env', 'user') }}"
+        password: "{{ lookup('env', 'password') }}"
         force_basic_auth: true
         headers:
           Accept: "application/json"
