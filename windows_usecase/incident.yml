@@ -60,7 +60,8 @@
     - name: Initialize incident lists
       ansible.builtin.set_fact:
         processed_incidents: []
-        matching_incidents: []
+        matching_cpu_incidents: []
+        matching_memory_incidents: []
  
     - name: Process incidents
       ansible.builtin.set_fact:
