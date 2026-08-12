@@ -1,0 +1,91 @@
+---
+- name: Get and Process ServiceNow Incidents
+  hosts: localhost
+  gather_facts: false
+ 
+  vars:
+    servicenow_url: "https://hcltechdemosls4.service-now.com"
+    assignment_group_name: "Nutanix%20Automation%20group"
+    state: 2
+    required_keyword: "Total CPU Utilization Percentage is too high"
+ 
+  tasks:
+    - name: Get assignment group
+      ansible.builtin.uri:
+        url: "{{ servicenow_url }}/api/now/table/sys_user_group?sysparm_query=name={{ assignment_group_name }}&sysparm_fields=sys_id,name&sysparm_limit=1"
+        method: GET
+        url_username: "{{ servicenow_username }}"
+        url_password: "{{ servicenow_password }}"
+        force_basic_auth: true
+        headers:
+          Accept: "application/json"
+        return_content: true
+        status_code: 200
+      register: assignment_group_response
+ 
+    - name: Display assignment group
+      ansible.builtin.debug:
+        var: assignment_group_response.json.result
+ 
+    - name: Set assignment group sys_id
+      ansible.builtin.set_fact:
+        assignment_group_sys_id: "{{ assignment_group_response.json.result[0].sys_id }}"
+      when: assignment_group_response.json.result | length > 0
+ 
+    - name: Display assignment group sys_id
+      ansible.builtin.debug:
+        msg: "Assignment Group sys_id: {{ assignment_group_sys_id }}"
+      when: assignment_group_sys_id is defined
+ 
+    - name: Get open incidents from assignment group
+      ansible.builtin.uri:
+        url: "{{ servicenow_url }}/api/now/table/incident?sysparm_query=assignment_group={{ assignment_group_sys_id }}^state={{ state }}&sysparm_fields=number,short_description,assignment_group,state,sys_id"
+        method: GET
+        url_username: "{{ servicenow_username }}"
+        url_password: "{{ servicenow_password }}"
+        force_basic_auth: true
+        headers:
+          Accept: "application/json"
+        return_content: true
+        status_code: 200
+      register: servicenow_response
+      when: assignment_group_sys_id is defined
+ 
+    - name: Display ServiceNow incidents
+      ansible.builtin.debug:
+        var: servicenow_response.json.result
+      when: servicenow_response is defined
+ 
+    - name: Initialize incident lists
+      ansible.builtin.set_fact:
+        processed_incidents: []
+        matching_incidents: []
+ 
+    - name: Process incidents
+      ansible.builtin.set_fact:
+        processed_incidents: "{{ processed_incidents + [ {
+          'number': item.number,
+          'sys_id': item.sys_id,
+          'short_description': item.short_description,
+          'ci_name': item.short_description.split(':')[1] | trim,
+          'keyword': item.short_description.split(':')[2] | trim,
+          'state': item.state
+        } ] }}"
+      loop: "{{ servicenow_response.json.result | default([]) }}"
+      when:
+        - item.short_description is defined
+        - item.short_description.split(':') | length >= 3
+ 
+    - name: Display processed incidents
+      ansible.builtin.debug:
+        var: processed_incidents
+ 
+    - name: Compare extracted keyword with required keyword
+      ansible.builtin.set_fact:
+        matching_incidents: "{{ matching_incidents + [ item ] }}"
+      loop: "{{ processed_incidents }}"
+      when: required_keyword | lower in item.keyword | lower
+ 
+    - name: Display matching incidents
+      ansible.builtin.debug:
+        var: matching_incident
