@@ -6,7 +6,7 @@
   vars:
     servicenow_url: "https://hcltechdemosls4.service-now.com"
     assignment_group_name: "Nutanix%20Automation%20group"
-    state: 2
+    state: 1
     required_cpu_keyword: "Total CPU Utilization Percentage is too high"
     required_memory_keyword: "Percentage of Committed Memory in Use is too high"
  
