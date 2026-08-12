@@ -1,69 +1,96 @@
----
-###############################################################################
-# Fetch Nutanix VM disk UUIDs via Prism Element v2 REST API
-# FIX 1: point base_url at the PE / cluster VIP (NOT Prism Central).
-#
-# Returns per-disk: bus, index, vmdisk_uuid, storage_container_uuid, size.
-# NOTE: naa_id is NOT exposed by any REST API -> use acli -o json for that.
-###############################################################################
-- name: Fetch Nutanix VM disk UUIDs via Prism Element v2 REST API
+- name: Fetch acli output (delegated)
   hosts: localhost
   gather_facts: false
   vars:
-    prism_element: "10.45.203.76"      # <-- PE / cluster VIP (NOT the PC IP …90)
-    prism_user: "admin"
-    prism_pass: "{{ prism_password }}"   # store in ansible-vault
+    cvm_host: "10.45.203.81"
     vm_name: "DNKGEVSEANST001"
-    base_url: "https://{{ prism_element }}:9440/PrismGateway/services/rest/v2.0"
- 
   tasks:
-    - name: Get all VMs with disk config from Prism Element
-      ansible.builtin.uri:
-        url: "{{ base_url }}/vms/?include_vm_disk_config=true"
-        method: GET
-        user: "{{ prism_user }}"
-        password: "{{ prism_pass }}"
-        force_basic_auth: true
-        validate_certs: false
-        return_content: true
-        status_code: 200
-      register: vms_resp
+    - name: Run acli vm.get on the CVM
+      ansible.builtin.command:
+        cmd: "acli -o json vm.get {{ vm_name }}"
+      delegate_to: "{{ cvm_host }}"
+      vars:
+        ansible_user: "nutanix"
+        ansible_ssh_pass: "{{ vault_cvm_password }}"
+      register: acli_json
+      changed_when: false
  
-    - name: Isolate our target VM by name
-      ansible.builtin.set_fact:
-        target_vm: >-
-          {{ vms_resp.json.entities
-             | selectattr('name', 'equalto', vm_name) | first }}
- 
-    - name: Fail early if VM not found
-      ansible.builtin.fail:
-        msg: "VM '{{ vm_name }}' not found on PE {{ prism_element }}"
-      when: target_vm is not defined or target_vm | length == 0
- 
-    - name: Show VM-level identifiers
-      ansible.builtin.debug:
-        msg:
-          vm_name: "{{ target_vm.name }}"
-          vm_uuid: "{{ target_vm.uuid }}"
-          num_vcpus: "{{ target_vm.num_vcpus | default('n/a') }}"
-          memory_mb: "{{ target_vm.memory_mb | default('n/a') }}"
- 
-    - name: Show per-disk UUIDs (vmdisk_uuid, container, bus/index, size)
+    - name: Parse and show naa_id / uuids
       ansible.builtin.debug:
         msg: >-
-          {{ target_vm.vm_disk_info
-             | json_query('[].{bus: disk_address.device_bus,
-                               index: disk_address.device_index,
-                               vmdisk_uuid: disk_address.vmdisk_uuid,
-                               storage_container_uuid: storage_container_uuid,
-                               size_bytes: size,
-                               is_cdrom: is_cdrom}') }}
+          {{ (acli_json.stdout | from_json).data[vm_name].config.disk_list
+             | selectattr('naa_id', 'defined')
+             | json_query('[].{bus: addr.bus, naa_id: naa_id,
+                               vmdisk_uuid: vmdisk_uuid,
+                               device_uuid: device_uuid}') }}
+
+
+# ---
+# ###############################################################################
+# # Fetch Nutanix VM disk UUIDs via Prism Element v2 REST API
+# # FIX 1: point base_url at the PE / cluster VIP (NOT Prism Central).
+# #
+# # Returns per-disk: bus, index, vmdisk_uuid, storage_container_uuid, size.
+# # NOTE: naa_id is NOT exposed by any REST API -> use acli -o json for that.
+# ###############################################################################
+# - name: Fetch Nutanix VM disk UUIDs via Prism Element v2 REST API
+#   hosts: localhost
+#   gather_facts: false
+#   vars:
+#     prism_element: "10.45.203.76"      # <-- PE / cluster VIP (NOT the PC IP …90)
+#     prism_user: "admin"
+#     prism_pass: "{{ prism_password }}"   # store in ansible-vault
+#     vm_name: "DNKGEVSEANST001"
+#     base_url: "https://{{ prism_element }}:9440/PrismGateway/services/rest/v2.0"
  
-    # Optional: save a clean JSON report to disk
-    - name: Save disk report as JSON
-      ansible.builtin.copy:
-        dest: "./{{ vm_name }}_pe_disks.json"
-        content: >-
-          {{ {'vm_name': target_vm.name,
-              'vm_uuid': target_vm.uuid,
-              'disks': target_vm.vm_disk_info} | to_nice_json }}
+#   tasks:
+#     - name: Get all VMs with disk config from Prism Element
+#       ansible.builtin.uri:
+#         url: "{{ base_url }}/vms/?include_vm_disk_config=true"
+#         method: GET
+#         user: "{{ prism_user }}"
+#         password: "{{ prism_pass }}"
+#         force_basic_auth: true
+#         validate_certs: false
+#         return_content: true
+#         status_code: 200
+#       register: vms_resp
+ 
+#     - name: Isolate our target VM by name
+#       ansible.builtin.set_fact:
+#         target_vm: >-
+#           {{ vms_resp.json.entities
+#              | selectattr('name', 'equalto', vm_name) | first }}
+ 
+#     - name: Fail early if VM not found
+#       ansible.builtin.fail:
+#         msg: "VM '{{ vm_name }}' not found on PE {{ prism_element }}"
+#       when: target_vm is not defined or target_vm | length == 0
+ 
+#     - name: Show VM-level identifiers
+#       ansible.builtin.debug:
+#         msg:
+#           vm_name: "{{ target_vm.name }}"
+#           vm_uuid: "{{ target_vm.uuid }}"
+#           num_vcpus: "{{ target_vm.num_vcpus | default('n/a') }}"
+#           memory_mb: "{{ target_vm.memory_mb | default('n/a') }}"
+ 
+#     - name: Show per-disk UUIDs (vmdisk_uuid, container, bus/index, size)
+#       ansible.builtin.debug:
+#         msg: >-
+#           {{ target_vm.vm_disk_info
+#              | json_query('[].{bus: disk_address.device_bus,
+#                                index: disk_address.device_index,
+#                                vmdisk_uuid: disk_address.vmdisk_uuid,
+#                                storage_container_uuid: storage_container_uuid,
+#                                size_bytes: size,
+#                                is_cdrom: is_cdrom}') }}
+ 
+#     # Optional: save a clean JSON report to disk
+#     - name: Save disk report as JSON
+#       ansible.builtin.copy:
+#         dest: "./{{ vm_name }}_pe_disks.json"
+#         content: >-
+#           {{ {'vm_name': target_vm.name,
+#               'vm_uuid': target_vm.uuid,
+#               'disks': target_vm.vm_disk_info} | to_nice_json }}
