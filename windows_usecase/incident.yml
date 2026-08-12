@@ -2,7 +2,7 @@
 - name: Get and Process ServiceNow Incidents
   hosts: localhost
   gather_facts: false
- 
+
   vars:
     servicenow_url: "https://hcltechdemosls4.service-now.com"
     assignment_group_name: "Nutanix%20Automation%20group"
@@ -11,7 +11,7 @@
     required_memory_keyword: "Percentage of Committed Memory in Use is too high"
     cpu_template_id: 33
     memory_template_id: 34
- 
+
   tasks:
     - name: Get assignment group
       ansible.builtin.uri:
@@ -25,21 +25,12 @@
         return_content: true
         status_code: 200
       register: assignment_group_response
- 
-    - name: Display assignment group
-      ansible.builtin.debug:
-        var: assignment_group_response.json.result
- 
+
     - name: Set assignment group sys_id
       ansible.builtin.set_fact:
         assignment_group_sys_id: "{{ assignment_group_response.json.result[0].sys_id }}"
       when: assignment_group_response.json.result | length > 0
- 
-    - name: Display assignment group sys_id
-      ansible.builtin.debug:
-        msg: "Assignment Group sys_id: {{ assignment_group_sys_id }}"
-      when: assignment_group_sys_id is defined
- 
+
     - name: Get open incidents from assignment group
       ansible.builtin.uri:
         url: "{{ servicenow_url }}/api/now/table/incident?sysparm_query=assignment_group={{ assignment_group_sys_id }}^state={{ state }}&sysparm_fields=number,short_description,assignment_group,state,sys_id"
@@ -53,48 +44,43 @@
         status_code: 200
       register: servicenow_response
       when: assignment_group_sys_id is defined
- 
-    - name: Display ServiceNow incidents
-      ansible.builtin.debug:
-        var: servicenow_response.json.result
-      when: servicenow_response is defined
- 
+
     - name: Initialize incident lists
       ansible.builtin.set_fact:
         processed_incidents: []
         matching_cpu_incidents: []
         matching_memory_incidents: []
- 
+
     - name: Process incidents
       ansible.builtin.set_fact:
-        processed_incidents: "{{ processed_incidents + [ {
+        processed_incidents: "{{ processed_incidents + [{
           'number': item.number,
           'sys_id': item.sys_id,
           'short_description': item.short_description,
           'ci_name': item.short_description.split(':')[1] | trim,
           'keyword': item.short_description.split(':')[2] | trim,
           'state': item.state
-        } ] }}"
+        }] }}"
       loop: "{{ servicenow_response.json.result | default([]) }}"
       when:
         - item.short_description is defined
         - item.short_description.split(':') | length >= 3
- 
-    - name: Display processed incidents
-      ansible.builtin.debug:
-        var: processed_incidents
- 
-    - name: Compare extracted keyword with required keyword
-      ansible.builtin.set_fact:
-        matching_cpu_incidents: "{{ matching_cpu_incidents + [ item ] }}"
-      loop: "{{ processed_incidents }}"
-      when: required_cpu_keyword | lower in item.keyword | lower
 
-    - name: Compare extracted keyword with required keyword
+    - name: Find CPU incidents
       ansible.builtin.set_fact:
-        matching_memory_incidents: "{{ matching_memory_incidents + [ item ] }}"
+        matching_cpu_incidents: "{{ matching_cpu_incidents + [item] }}"
       loop: "{{ processed_incidents }}"
-      when: required_memory_keyword | lower in item.keyword | lower
+      when: "(required_cpu_keyword | lower) in (item.keyword | lower)"
+
+    - name: Find Memory incidents
+      ansible.builtin.set_fact:
+        matching_memory_incidents: "{{ matching_memory_incidents + [item] }}"
+      loop: "{{ processed_incidents }}"
+      when: "(required_memory_keyword | lower) in (item.keyword | lower)"
+
+    - name: Combine matching incidents
+      ansible.builtin.set_fact:
+        all_matching_incidents: "{{ matching_cpu_incidents + matching_memory_incidents }}"
 
     - name: Update incidents and move to In Progress
       ansible.builtin.uri:
@@ -109,12 +95,11 @@
         body_format: json
         body:
           state: "2"
-          work_notes: "Ansible Automation remediation steps has been initiated this alert."
+          work_notes: "Ansible Automation remediation steps have been initiated for this alert."
         status_code: 200
-        loop: "{{ matching_cpu_incidents + matching_memory_incidents }}"
-        register: update_result
-        when: (matching_cpu_incidents | length > 0) or
-        (matching_memory_incidents | length > 0)
+      loop: "{{ all_matching_incidents }}"
+      register: update_result
+      when: all_matching_incidents | length > 0
 
     - name: Launch CPU remediation template
       ansible.builtin.uri:
@@ -122,18 +107,21 @@
         method: POST
         user: "{{ lookup('env', 'username') }}"
         password: "{{ lookup('env', 'userpassword') }}"
-        force_basic_auth: yes
-        validate_certs: no
+        force_basic_auth: true
+        validate_certs: false
         headers:
           Content-Type: "application/json"
         body_format: json
-        status_code: [200, 201]
         body:
           extra_vars:
             incident_number: "{{ item.number }}"
             incident_sys_id: "{{ item.sys_id }}"
             ci_name: "{{ item.ci_name }}"
             remediation_type: "cpu"
+        status_code:
+          - 200
+          - 201
+          - 202
       loop: "{{ matching_cpu_incidents }}"
       register: cpu_awx_jobs
       when: matching_cpu_incidents | length > 0
@@ -144,18 +132,31 @@
         method: POST
         user: "{{ lookup('env', 'username') }}"
         password: "{{ lookup('env', 'userpassword') }}"
-        force_basic_auth: yes
-        validate_certs: no
+        force_basic_auth: true
+        validate_certs: false
         headers:
           Content-Type: "application/json"
         body_format: json
-        status_code: [200, 201]
         body:
           extra_vars:
             incident_number: "{{ item.number }}"
             incident_sys_id: "{{ item.sys_id }}"
             ci_name: "{{ item.ci_name }}"
             remediation_type: "memory"
+        status_code:
+          - 200
+          - 201
+          - 202
       loop: "{{ matching_memory_incidents }}"
       register: memory_awx_jobs
       when: matching_memory_incidents | length > 0
+
+    - name: Display CPU job results
+      ansible.builtin.debug:
+        var: cpu_awx_jobs
+      when: cpu_awx_jobs is defined
+
+    - name: Display Memory job results
+      ansible.builtin.debug:
+        var: memory_awx_jobs
+      when: memory_awx_jobs is defined
