@@ -88,11 +88,11 @@
           {% endfor %}
 
  
-    # Optional: save a clean JSON report to disk
-    - name: Save disk report as JSON
-      ansible.builtin.copy:
-        dest: "./{{ vm_name }}_pe_disks.json"
-        content: >-
-          {{ {'vm_name': target_vm.name,
-              'vm_uuid': target_vm.uuid,
-              'disks': target_vm.vm_disk_info} | to_nice_json }}
+    # # Optional: save a clean JSON report to disk
+    # - name: Save disk report as JSON
+    #   ansible.builtin.copy:
+    #     dest: "./{{ vm_name }}_pe_disks.json"
+    #     content: >-
+    #       {{ {'vm_name': target_vm.name,
+    #           'vm_uuid': target_vm.uuid,
+    #           'disks': target_vm.vm_disk_info} | to_nice_json }}
