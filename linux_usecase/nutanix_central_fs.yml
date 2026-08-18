@@ -75,16 +75,18 @@
           num_vcpus: "{{ target_vm.num_vcpus | default('n/a') }}"
           memory_mb: "{{ target_vm.memory_mb | default('n/a') }}"
  
-    - name: Show per-disk UUIDs (vmdisk_uuid, container, bus/index, size)
+    - name: Show per-disk UUIDs
       ansible.builtin.debug:
-        msg: >-
-          {{ target_vm.vm_disk_info
-             | json_query('[].{bus: disk_address.device_bus,
-                               index: disk_address.device_index,
-                               vmdisk_uuid: disk_address.vmdisk_uuid,
-                               storage_container_uuid: storage_container_uuid,
-                               size_bytes: size,
-                               is_cdrom: is_cdrom}') }}
+        msg: |
+          {% for disk in target_vm.vm_disk_info %}
+          bus={{ disk.disk_address.device_bus }}
+          index={{ disk.disk_address.device_index }}
+          vmdisk_uuid={{ disk.disk_address.vmdisk_uuid }}
+          storage_container_uuid={{ disk.storage_container_uuid }}
+          size_bytes={{ disk.size }}
+          is_cdrom={{ disk.is_cdrom }}
+          {% endfor %}
+
  
     # Optional: save a clean JSON report to disk
     - name: Save disk report as JSON
