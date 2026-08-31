@@ -27,17 +27,17 @@
       ansible.builtin.add_host:
         name: "{{ item }}"
         groups: dynamic_cyberark_targets
-        ansible_user: "{{ target_linux_user }}"
-        ansible_password: "{{ target_linux_password }}"
+        ansible_user: "{{ target_user }}"
+        ansible_password: "{{ target_password }}"
         ansible_ssh_auth_method: password   
         filesystem_name: "{{ filesystem_name }}"
         # Privilege Escalation
         ansible_become: true
         ansible_become_method: sudo
         ansible_become_user: root
-        ansible_become_password: "{{ target_linux_password }}"
+        ansible_become_password: "{{ target_password }}"
       #no_log: true
-      loop: "{{ target_linux_ips }}"
+      loop: "{{ target_ips }}"
 
 - name: Phase 2 - Execute Tasks on Target Linux Machine
   hosts: dynamic_cyberark_targets
