@@ -169,39 +169,39 @@
           - "Nutanix Disk UUID : {{ nutanix_disk_uuid | default('Not Found') }}"
           - "HostName          : {{ host_name.stdout }}"
 
-    - name: Search VM by hostname
-      uri:
-        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
-        method: POST
-        user: "{{ prism_user }}"
-        password: "{{ prism_password }}"
-        force_basic_auth: yes
-        validate_certs: no
-        body_format: json
-        body:
-          kind: vm
-          filter: "vm_name=={{ host_name.stdout | upper }},vm_name=={{ host_name.stdout | lower }}"
-          length: 1
-      register: vm_search
+    # - name: Search VM by hostname
+    #   uri:
+    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/list"
+    #     method: POST
+    #     user: "{{ prism_user }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: yes
+    #     validate_certs: no
+    #     body_format: json
+    #     body:
+    #       kind: vm
+    #       filter: "vm_name=={{ host_name.stdout | upper }},vm_name=={{ host_name.stdout | lower }}"
+    #       length: 1
+    #   register: vm_search
 
-    - name: Get VM UUID
-      set_fact:
-        vm_uuid: "{{ vm_search.json.entities[0].metadata.uuid }}"
+    # - name: Get VM UUID
+    #   set_fact:
+    #     vm_uuid: "{{ vm_search.json.entities[0].metadata.uuid }}"
 
-    - name: Get VM Details
-      uri:
-        url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
-        method: GET
-        user: "{{ prism_user }}"
-        password: "{{ prism_password }}"
-        force_basic_auth: yes
-        validate_certs: no
-      register: vm_details
+    # - name: Get VM Details
+    #   uri:
+    #     url: "https://{{ prism_host }}:9440/api/nutanix/v3/vms/{{ vm_uuid }}"
+    #     method: GET
+    #     user: "{{ prism_user }}"
+    #     password: "{{ prism_password }}"
+    #     force_basic_auth: yes
+    #     validate_certs: no
+    #   register: vm_details
 
-    - name: Match Nutanix Disk
-      set_fact:
-        matched_disk: "{{ item }}"
-      loop: "{{ vm_details.json.spec.resources.disk_list }}"
-      when:
-        - item.data_source_reference is defined
-        - item.data_source_reference.uuid == nutanix_disk_uuid
+    # - name: Match Nutanix Disk
+    #   set_fact:
+    #     matched_disk: "{{ item }}"
+    #   loop: "{{ vm_details.json.spec.resources.disk_list }}"
+    #   when:
+    #     - item.data_source_reference is defined
+    #     - item.data_source_reference.uuid == nutanix_disk_uuid
