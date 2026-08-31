@@ -37,7 +37,7 @@
         ansible_become_user: root
         ansible_become_password: "{{ target_password }}"
       #no_log: true
-      loop: "{{ target_ips }}"
+      loop: "{{ target_linux_ips }}"
 
 - name: Phase 2 - Execute Tasks on Target Linux Machine
   hosts: dynamic_cyberark_targets
