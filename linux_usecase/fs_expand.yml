@@ -48,6 +48,7 @@
 #     #prism_host: "dnkhovpcp001"
     prism_user: "automation"
     filesystem_mount: "{{ filesystem_name }}"
+    additional_disk_gb: 2
   #   vg_name: vg00
   #   lv_name: lvol5
   #   lv_path: "/dev/vg00/lvol5"
