@@ -43,7 +43,10 @@
   hosts: dynamic_cyberark_targets
   gather_facts: true
   become: true
-  # vars:
+  vars:
+    prism_host: "10.45.203.90"
+#     #prism_host: "dnkhovpcp001"
+    prism_user: "automation"
   #   vg_name: vg00
   #   lv_name: lvol5
   #   lv_path: "/dev/vg00/lvol5"
